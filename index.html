@@ -577,10 +577,10 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
         <input type="file" id="cameraInput" accept="image/*" capture="environment">
         <div style="margin-top:8px; display:flex; gap:8px;">
           <button class="btn btn-secondary btn-sm" style="flex:1" onclick="document.getElementById('galleryInput').click()">📁 Gallery</button>
-          <input type="file" id="galleryInput" accept="image/*">
           <button class="btn btn-secondary btn-sm" id="addAngleBtn" style="display:none" onclick="document.getElementById('angleInput').click()">📷 +Angle</button>
-          <input type="file" id="angleInput" accept="image/*" capture="environment">
         </div>
+        <input type="file" id="galleryInput" accept="image/*" style="display:none">
+        <input type="file" id="angleInput" accept="image/*" capture="environment" style="display:none">
         <div id="angleStrip" style="display:none; margin-top:8px; gap:6px; flex-wrap:wrap;"></div>
       </div>
 
