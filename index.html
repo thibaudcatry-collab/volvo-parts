@@ -578,7 +578,10 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
         <div style="margin-top:8px; display:flex; gap:8px;">
           <button class="btn btn-secondary btn-sm" style="flex:1" onclick="document.getElementById('galleryInput').click()">📁 Gallery</button>
           <input type="file" id="galleryInput" accept="image/*">
+          <button class="btn btn-secondary btn-sm" id="addAngleBtn" style="display:none" onclick="document.getElementById('angleInput').click()">📷 +Angle</button>
+          <input type="file" id="angleInput" accept="image/*" capture="environment">
         </div>
+        <div id="angleStrip" style="display:none; margin-top:8px; gap:6px; flex-wrap:wrap;"></div>
       </div>
 
       <div class="card">
@@ -597,10 +600,13 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
             <option value="81,83,84,85,86,87,88">Cab, Body & Interior</option>
           </select>
         </div>
-        <button class="btn btn-primary btn-full" id="analyzeBtn" disabled onclick="analyzePhoto()">
-          <span class="spinner" style="display:none" id="analyzeSpinner"></span>
-          <span id="analyzeBtnText">🔍 ANALYZE PHOTO</span>
-        </button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" style="flex:2" id="analyzeBtn" disabled onclick="analyzePhoto()">
+            <span class="spinner" style="display:none" id="analyzeSpinner"></span>
+            <span id="analyzeBtnText">🔍 ANALYZE PHOTO</span>
+          </button>
+          <button class="btn btn-secondary" style="flex:1" onclick="showScreen('bulk')">⚡ BULK</button>
+        </div>
       </div>
     </div>
 
@@ -609,9 +615,10 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
       <div class="card">
         <div class="card-title"><span class="ct-icon">🤖</span> AI IDENTIFICATION</div>
         <div id="guessResults"></div>
-        <div style="margin-top:10px; display:flex; gap:8px;">
-          <button class="btn btn-secondary" style="flex:1" onclick="retryAnalysis()">🔄 TRY AGAIN</button>
-          <button class="btn btn-secondary" style="flex:1" onclick="addAsUnknown()">❓ UNKNOWN</button>
+        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-secondary btn-sm" onclick="retryAnalysis()">🔄 Try Again</button>
+          <button class="btn btn-secondary btn-sm" onclick="addAsUnknown()">❓ Unknown</button>
+          <button class="btn btn-danger btn-sm" onclick="resetIdentify()">✕ New Photo</button>
         </div>
       </div>
     </div>
@@ -669,6 +676,46 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
           <button class="btn btn-primary" onclick="resetIdentify()">📷 ADD ANOTHER</button>
           <button class="btn btn-secondary" onclick="showScreen('inventory')">📦 VIEW INVENTORY</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ SCREEN: BULK ═══ -->
+  <div class="screen" id="screen-bulk">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <button class="btn btn-secondary btn-sm" onclick="showScreen('identify')">← Back</button>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--accent);letter-spacing:2px">BULK MODE</div>
+      <div id="bulkCount" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-left:auto">0 queued</div>
+    </div>
+
+    <!-- Capture area -->
+    <div class="card" id="bulkCaptureCard">
+      <div class="card-title"><span class="ct-icon">📷</span> PHOTOGRAPH PARTS</div>
+      <div class="photo-area" id="bulkPhotoArea" onclick="document.getElementById('bulkCameraInput').click()">
+        <div class="photo-placeholder">
+          <div class="photo-icon">📷</div>
+          <div class="photo-label">TAP TO PHOTOGRAPH PART</div>
+          <div class="photo-sublabel">Each photo is queued for analysis</div>
+        </div>
+      </div>
+      <input type="file" id="bulkCameraInput" accept="image/*" capture="environment">
+      <div style="margin-top:8px;display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" style="flex:1" onclick="document.getElementById('bulkGalleryInput').click()">📁 Gallery</button>
+        <input type="file" id="bulkGalleryInput" accept="image/*" multiple>
+        <button class="btn btn-primary btn-sm" style="flex:1" id="bulkAnalyzeBtn" disabled onclick="analyzeBulkQueue()">🔍 ANALYZE ALL</button>
+      </div>
+    </div>
+
+    <!-- Queue -->
+    <div id="bulkQueue"></div>
+
+    <!-- Review panel (shown when results ready) -->
+    <div id="bulkReview" style="display:none">
+      <div class="card">
+        <div class="card-title"><span class="ct-icon">✅</span> REVIEW & SAVE</div>
+        <div id="bulkReviewList"></div>
+        <button class="btn btn-primary btn-full" style="margin-top:10px" onclick="saveAllBulk()">💾 SAVE ALL TO INVENTORY</button>
       </div>
     </div>
   </div>
@@ -1076,6 +1123,44 @@ function updateHeaderStats() {
 
 document.getElementById('cameraInput').addEventListener('change', handlePhoto);
 document.getElementById('galleryInput').addEventListener('change', handlePhoto);
+document.getElementById('angleInput').addEventListener('change', handleAnglePhoto);
+
+// Extra angles storage
+let extraAngles = []; // array of base64 strings
+
+async function handleAnglePhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (extraAngles.length >= 2) {
+    showToast('Max 3 photos total', 'error');
+    return;
+  }
+  const compressed = await compressImage(file, 1000, 0.8);
+  extraAngles.push(compressed.b64);
+  renderAngleStrip();
+  e.target.value = '';
+  showToast('Angle ' + (extraAngles.length + 1) + ' added ✓', 'success');
+}
+
+function renderAngleStrip() {
+  const strip = document.getElementById('angleStrip');
+  if (extraAngles.length === 0) {
+    strip.style.display = 'none';
+    return;
+  }
+  strip.style.display = 'flex';
+  strip.innerHTML = extraAngles.map((b64, i) =>
+    `<div style="position:relative">
+      <img src="data:image/jpeg;base64,${b64}" style="width:64px;height:64px;border-radius:6px;object-fit:cover;border:1px solid var(--accent)">
+      <button onclick="removeAngle(${i})" style="position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;padding:0;line-height:18px">✕</button>
+    </div>`
+  ).join('');
+}
+
+function removeAngle(i) {
+  extraAngles.splice(i, 1);
+  renderAngleStrip();
+}
 
 async function handlePhoto(e) {
   const file = e.target.files[0];
@@ -1087,6 +1172,7 @@ async function handlePhoto(e) {
   photoArea.classList.add('has-photo');
   photoArea.innerHTML = '<img src="' + compressed.dataUrl + '" alt="Part photo">';
   document.getElementById('analyzeBtn').disabled = false;
+  document.getElementById('addAngleBtn').style.display = 'inline-flex';
   e.target.value = '';
 }
 
@@ -1123,6 +1209,86 @@ async function compressImage(file, maxWidth, quality) {
 // ═══════════════════════════════════════════════════════
 // AI ANALYSIS
 // ═══════════════════════════════════════════════════════
+
+
+// ═══════════════════════════════════════════════════════
+// SMART PART NUMBER DETECTION
+// ═══════════════════════════════════════════════════════
+
+async function detectPartNumber(photoB64, groupFilter) {
+  // Quick OCR prompt — much shorter/faster than full identification
+  const apiKey = getApiKey();
+  if (!apiKey) return null;
+  if (typeof PARTS_DB === 'undefined' || PARTS_DB.length === 0) return null;
+
+  try {
+    const resp = await fetch(ANTHROPIC_API, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 100,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: photoB64 } },
+            { type: 'text', text: 'Look for any part number printed on this item (Volvo part numbers are 4-7 digits, sometimes with a dash and digit e.g. 681609-4 or 461537-3). Return ONLY the part number if you can clearly read one, or return the word NONE if no part number is visible.' }
+          ]
+        }]
+      })
+    });
+    const data = await resp.json();
+    const raw = (data.content||[]).map(b=>b.text||'').join('').trim();
+
+    if (!raw || raw === 'NONE' || raw.toLowerCase().includes('none')) return null;
+
+    // Extract first number-like pattern from response
+    const m = raw.match(/\d{4,7}(?:-\d)?/);
+    if (!m) return null;
+    const detected = m[0];
+
+    // Look up in PARTS_DB
+    let filteredDB = PARTS_DB;
+    if (groupFilter) {
+      const groups = groupFilter.split(',');
+      filteredDB = PARTS_DB.filter(p => groups.includes(p.g));
+    }
+
+    // Try exact match first, then base number match
+    let dbMatch = filteredDB.find(p => p.no === detected) ||
+                  filteredDB.find(p => p.no.startsWith(detected.split('-')[0]));
+
+    if (!dbMatch) {
+      // Try stripping the suffix
+      const base = detected.replace(/-\d$/, '');
+      dbMatch = filteredDB.find(p => p.no.replace(/-\d$/, '') === base);
+    }
+
+    if (!dbMatch) return null;
+
+    const tatanka = getTatankaData(dbMatch.no);
+    showToast('📷 Part number detected: ' + detected, 'success');
+    return {
+      name: dbMatch.name,
+      sv: dbMatch.sv,
+      no: dbMatch.no,
+      group: dbMatch.g,
+      confidence: 99,
+      reason: 'Part number ' + detected + ' read directly from the part/packaging',
+      detectedNo: detected,
+      tatanka: tatanka,
+      fromOCR: true
+    };
+  } catch(e) {
+    console.log('OCR detection failed, falling back to full AI:', e.message);
+    return null;
+  }
+}
 
 async function analyzePhoto() {
   const apiKey = getApiKey();
@@ -1176,6 +1342,21 @@ Rules:
 - If unsure, still give 3 best guesses with lower confidence
 - Return ONLY the JSON array, no other text`;
 
+  // ── SMART PART NUMBER DETECTION ──
+  // Scan image for text first using a tiny fast prompt
+  // If we find a Volvo part number that matches the catalogue, skip full AI
+  const quickMatch = await detectPartNumber(currentPhoto, groupFilter);
+  if (quickMatch) {
+    currentGuesses = [quickMatch];
+    identifyAttempt = 0;
+    showStep(2);
+    renderGuesses([quickMatch]);
+    document.getElementById('analyzeSpinner').style.display = 'none';
+    document.getElementById('analyzeBtnText').textContent = '🔍 ANALYZE PHOTO';
+    document.getElementById('analyzeBtn').disabled = false;
+    return;
+  }
+
   try {
     const response = await fetch(ANTHROPIC_API, {
       method: 'POST',
@@ -1186,13 +1367,16 @@ Rules:
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-6',
-        max_tokens: 2000,
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 800,
         messages: [{
           role: 'user',
           content: [
             { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: currentPhoto } },
-            { type: 'text', text: prompt }
+            ...extraAngles.map(b64 => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } })),
+            { type: 'text', text: extraAngles.length > 0
+                ? prompt.replace('this photo', `these ${extraAngles.length + 1} photos showing different angles`)
+                : prompt }
           ]
         }]
       })
@@ -1492,6 +1676,9 @@ function resetIdentify() {
   document.getElementById('confirmPrice').value = '';
   document.getElementById('confirmNotes').value = '';
   document.querySelectorAll('.cond-btn').forEach(b => b.className = 'cond-btn');
+  extraAngles = [];
+  renderAngleStrip();
+  document.getElementById('addAngleBtn').style.display = 'none';
   showStep(1);
 }
 
@@ -1585,9 +1772,11 @@ function renderInvItem(item) {
         ${item.status === 'listed' ? `<button class="btn btn-success btn-xs" onclick="confirmSold(${item.id})">💰 SOLD</button>` : ''}
         ${item.status === 'listed' ? `<button class="btn btn-secondary btn-xs" onclick="setItemStatus(${item.id},'available')">↩ UNLIST</button>` : ''}
         <button class="btn btn-secondary btn-xs" onclick="editItem(${item.id})">✏️ EDIT</button>
+        <button class="btn btn-secondary btn-xs" onclick="refreshItemPrice(${item.id})">↻ Price</button>
         <button class="btn btn-secondary btn-xs" onclick="showQRForItem(${item.id})">🏷️ LABEL</button>
       ` : `<span style="font-size:12px;color:var(--muted)">Sold on ${item.soldDate ? new Date(item.soldDate).toLocaleDateString() : '—'}</span>`}
       ${item.isUnknown ? `<button class="btn btn-secondary btn-xs" onclick="retryIdentify(${item.id})">🔍 IDENTIFY</button>` : ''}
+      ${item.status !== 'sold' && !item.isUnknown ? `<button class="btn btn-secondary btn-xs" onclick="shareWhatsApp(${item.id})" style="background:rgba(37,211,102,0.15);border-color:#25D366;color:#25D366">💬 WhatsApp</button>` : ''}
       <button class="btn btn-danger btn-xs" onclick="deleteItem(${item.id})">🗑️</button>
     </div>
   </div>`;
@@ -1684,37 +1873,125 @@ function filterCatalogue() {
   renderCatalogue();
 }
 
+// ── Search synonym map ──────────────────────────────────────
+const SEARCH_SYNONYMS = {
+  'screw':['screw','skruv','bolt','bult'],'bolt':['bolt','bult','screw','skruv'],
+  'nut':['nut','mutter'],'washer':['washer','bricka','ring'],
+  'gasket':['gasket','packning','seal','tätning'],'seal':['seal','tätning','gasket','packning','o-ring'],
+  'bearing':['bearing','lager','kullager'],'filter':['filter','insats','filterinsats'],
+  'hose':['hose','slang','pipe','rör'],'pipe':['pipe','rör','hose','slang'],
+  'pump':['pump'],'valve':['valve','ventil'],'spring':['spring','fjäder'],
+  'bracket':['bracket','fäste','konsol','hållare'],'cover':['cover','lock','kåpa'],
+  'plug':['plug','plugg','lock'],'shaft':['shaft','axel'],'gear':['gear','kugghjul','växel'],
+  'cable':['cable','kabel','vajer','vajern'],'switch':['switch','brytare','kontakt'],
+  'relay':['relay','relä'],'sensor':['sensor','givare'],
+  'lamp':['lamp','lampa','bulb','glödlampa'],'bulb':['bulb','glödlampa','lamp'],
+  'brake':['brake','broms'],'clutch':['clutch','koppling'],
+  'pad':['pad','belägg'],'disc':['disc','skiva','disk'],
+  'shock':['shock','dämpare','stötdämpare'],'bushing':['bushing','bussning'],
+  'pin':['pin','tapp','pinne','stift'],'clip':['clip','klämma'],
+  'rubber':['rubber','gummi'],'belt':['belt','rem','drivrem'],
+  'tank':['tank','behållare'],'engine':['engine','motor'],
+  'radiator':['radiator','kylare'],'fan':['fan','fläkt'],
+  'steering':['steering','styrning'],'door':['door','dörr'],
+  'window':['window','ruta','glas'],'seat':['seat','säte'],
+  'exhaust':['exhaust','avgasrör','avgassystem'],'intake':['intake','inlopp','luftfilter'],
+  'oil':['oil','olja','smörj'],'fuel':['fuel','bränsle'],
+  'coolant':['coolant','kylvätska'],'battery':['battery','batteri'],
+  'alternator':['alternator','generator'],'starter':['starter','startmotor'],
+  'ignition':['ignition','tändning','tändspole'],'axle':['axle','axel','nav'],
+  'wheel':['wheel','hjul','fälg'],'tire':['tire','tyre','däck'],
+  'suspension':['suspension','fjädring','upphängning'],'frame':['frame','ram'],
+  'bumper':['bumper','stötfångare'],'body':['body','karosseri'],
+  'heating':['heating','värme'],'wiring':['wiring','ledning','kablar'],
+  'fuse':['fuse','säkring'],'kit':['kit','sats','set'],
+  'plate':['plate','plåt','platta'],'bracket':['bracket','konsol','fäste'],
+  'clamp':['clamp','klämma','clips'],'stud':['stud','pinnbult','pinnskruv'],
+  'ring':['ring','bricka','tätningsring'],'bush':['bush','bussning'],
+  'cap':['cap','lock','huv'],'arm':['arm','länk','stag'],
+  'rod':['rod','stag','stång'],'link':['link','länk','stag'],
+  'joint':['joint','led','knut'],'shaft':['shaft','axel','axeln'],
+};
+
+function expandSearchTerms(query) {
+  const words = query.toLowerCase().trim().split(/\s+/);
+  const allTerms = new Set(words);
+  for (const word of words) {
+    if (SEARCH_SYNONYMS[word]) SEARCH_SYNONYMS[word].forEach(s => allTerms.add(s));
+    if (word.endsWith('s') && word.length > 3) allTerms.add(word.slice(0,-1));
+    if (word.endsWith('es') && word.length > 4) allTerms.add(word.slice(0,-2));
+    if (word.endsWith('ing') && word.length > 5) allTerms.add(word.slice(0,-3));
+  }
+  return [...allTerms];
+}
+
+function searchScore(part, terms) {
+  let score = 0;
+  const name = (part.name||'').toLowerCase();
+  const sv   = (part.sv||'').toLowerCase();
+  const no   = (part.no||'').toLowerCase();
+  for (const term of terms) {
+    if (no === term) { score += 100; continue; }
+    if (no.startsWith(term)) { score += 60; continue; }
+    if (no.includes(term)) { score += 40; continue; }
+    const nameWords = name.split(/\s+/);
+    if (nameWords.includes(term)) { score += 35; continue; }
+    if (name.includes(term)) { score += 20; continue; }
+    if (sv.includes(term)) { score += 10; continue; }
+  }
+  return score;
+}
+
 function renderCatalogue() {
   const list = document.getElementById('catList');
-  if (!list || typeof PARTS_DB === 'undefined') return;
+  if (!list) return;
 
-  if (!catSearch && !catFilter) {
-    list.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">SEARCH THE CATALOGUE</div><div class="empty-text">Type a part name, number, or Swedish name.<br>Or select a system filter above.</div></div>`;
+  if (!PARTS_DB || PARTS_DB.length === 0) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">CATALOGUE NOT LOADED</div>
+      <div class="empty-text">PARTS_DB.js did not load.<br><br>Check that you:<br>
+      1. Changed <b>const PARTS_DB =</b> to <b>window.PARTS_DB_DATA =</b> in PARTS_DB.js<br>
+      2. Uncommented the script tag at the bottom of index.html</div></div>`;
     return;
   }
 
-  let items = PARTS_DB;
+  if (!catSearch && !catFilter) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">📋</div>
+      <div class="empty-title">SEARCH THE CATALOGUE</div>
+      <div class="empty-text">${PARTS_DB.length.toLocaleString()} parts loaded.<br>
+      Type a part name, number, or keyword.<br><br>
+      <span style="color:var(--accent)">Try: screw · gasket · bearing · filter · hose · valve</span></div></div>`;
+    return;
+  }
+
+  let items = [...PARTS_DB];
   if (catFilter) items = items.filter(p => p.g === catFilter);
+
   if (catSearch) {
-    items = items.filter(p =>
-      (p.name||'').toLowerCase().includes(catSearch) ||
-      (p.no||'').toLowerCase().includes(catSearch) ||
-      (p.sv||'').toLowerCase().includes(catSearch)
-    );
+    const terms = expandSearchTerms(catSearch);
+    const scored = items
+      .map(p => ({ p, score: searchScore(p, terms) }))
+      .filter(x => x.score > 0)
+      .sort((a, b) => b.score - a.score);
+    items = scored.map(x => x.p);
   }
 
   const shown = items.slice(0, 100);
   if (shown.length === 0) {
-    list.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">NO RESULTS</div><div class="empty-text">Try a different search term.</div></div>`;
+    list.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">NO RESULTS</div>
+      <div class="empty-text">No match for "<b>${catSearch}</b>"<br><br>
+      <span style="color:var(--accent)">Try: screw · bolt · gasket · bearing · filter · hose · seal · valve · spring</span></div></div>`;
     return;
   }
 
-  list.innerHTML = (items.length > 100 ? `<div class="section-header">Showing 100 of ${items.length} results — refine your search</div>` : '') +
+  list.innerHTML =
+    `<div class="section-header">${items.length > 100 ? 'Top 100 of '+items.length+' results' : items.length+' result'+(items.length>1?'s':'')}</div>` +
     shown.map(p => {
       const tatankaItems = getTatankaData(p.no);
       const bestT = tatankaItems.find(t=>!t.is_used) || tatankaItems[0];
       const eur = bestT ? sekToEur(bestT.price_sek) : null;
-      const thumb = bestT?.image_local ? `<img style="width:40px;height:40px;border-radius:5px;object-fit:cover;border:1px solid var(--border);flex-shrink:0" src="${bestT.image_local}" alt="">` : `<div style="width:40px;height:40px;border-radius:5px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;color:var(--muted)">🔧</div>`;
+      const thumb = bestT?.image_local ?
+        `<img style="width:40px;height:40px;border-radius:5px;object-fit:cover;border:1px solid var(--border);flex-shrink:0" src="${bestT.image_local}" alt="">` :
+        `<div style="width:40px;height:40px;border-radius:5px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;color:var(--muted)">🔧</div>`;
       return `<div class="cat-item" onclick="openCatDetail('${p.no.replace(/'/g,"\\'")}')">
         ${thumb}
         <div class="cat-item-info">
@@ -1989,7 +2266,7 @@ async function fetchSourcePrice() {
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-6',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 200,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         messages: [{
@@ -2175,8 +2452,64 @@ function openModal(type, data) {
       </div>`;
   }
 
+
+
+  else if (type === 'confirmPriceRefresh') {
+    const { item, newPrice, source } = data;
+    html = `<button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title">↻ REFRESH PRICE</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px">${item.name}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px">CURRENT</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;color:var(--text)">${formatEur(item.askingPrice)}</div>
+        </div>
+        <div style="background:rgba(82,199,122,0.1);border:1px solid var(--green);border-radius:var(--radius);padding:12px;text-align:center">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px">NEW (from ${source})</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;color:var(--green)">${formatEur(Math.round(newPrice*100)/100)}</div>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Keep Old</button>
+        <button class="btn btn-primary" style="flex:1" onclick="applyRefreshedPrice(${item.id}, ${newPrice})">✓ USE NEW PRICE</button>
+      </div>`;
+  }
+
+  else if (type === 'whatsappShare') {
+    const { msg, item } = data;
+    const hasPhoto = !!item.photo;
+    html = `<button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title" style="color:#25D366">💬 SHARE ON WHATSAPP</div>
+      <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:12px;margin-bottom:16px;font-size:13px;line-height:1.8;white-space:pre-wrap">${msg.replace(/\*/g,'<b>').replace(/\*/g,'</b>')}</div>
+      ${hasPhoto ? `
+      <div style="background:rgba(37,211,102,0.08);border:1px solid #25D366;border-radius:var(--radius);padding:10px;margin-bottom:14px;font-size:12px;color:#25D366">
+        📋 Message copied to clipboard.<br>
+        <span style="color:var(--text2)">In WhatsApp: choose contact → tap the attachment button → Photo → paste message in text field.</span>
+      </div>` : ''}
+      <div class="btn-group">
+        <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-full" style="flex:2;background:#25D366;color:#000;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600" onclick="openWhatsApp(\`${encodeURIComponent(msg)}\`)">OPEN WHATSAPP →</button>
+      </div>`;
+  }
+
   body.innerHTML = html;
   document.getElementById('modalOverlay').classList.add('open');
+}
+
+function applyRefreshedPrice(id, price) {
+  const item = INVENTORY.find(i => i.id === id);
+  if (!item) return;
+  item.askingPrice = Math.round(price * 100) / 100;
+  item.priceRefreshedDate = new Date().toISOString();
+  saveInventory();
+  closeModal();
+  renderInventory();
+  showToast('Price updated to ' + formatEur(item.askingPrice), 'success');
+}
+
+function openWhatsApp(encodedMsg) {
+  closeModal();
+  window.location.href = 'whatsapp://send?text=' + encodedMsg;
 }
 
 function closeModal(e) {
@@ -2291,21 +2624,443 @@ document.getElementById('screen-inventory').insertAdjacentHTML('afterbegin',
   </div>`
 );
 
+
+
+
+// ═══════════════════════════════════════════════════════
+// REFRESH PRICE
+// ═══════════════════════════════════════════════════════
+
+async function refreshItemPrice(id) {
+  const item = INVENTORY.find(i => i.id === id);
+  if (!item) return;
+
+  const apiKey = getApiKey();
+  if (!apiKey) { promptApiKey('none'); return; }
+
+  showToast('Fetching current price...', '');
+
+  try {
+    let newPrice = null;
+    let source = '';
+
+    // Case 1: Custom part with source URL
+    if (item.isCustom && item.sourceUrl) {
+      const resp = await fetch(ANTHROPIC_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 150,
+          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+          messages: [{
+            role: 'user',
+            content: 'Visit ' + item.sourceUrl + ' and find the current price in EUR. Return ONLY JSON: {"price":99.99,"currency":"EUR","name":"product name"}'
+          }]
+        })
+      });
+      if (!resp.ok) throw new Error('API ' + resp.status);
+      const data = await resp.json();
+      const text = (data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
+      const m = text.match(/\{[^}]+\}/);
+      if (m) {
+        const parsed = JSON.parse(m[0]);
+        if (parsed.price) { newPrice = parseFloat(parsed.price); source = 'source URL'; }
+      }
+    }
+
+    // Case 2: Tatanka part — re-fetch Tatanka page
+    else if (item.partNo && !item.isCustom) {
+      const tatankaItems = getTatankaData(item.partNo);
+      const best = tatankaItems.find(t=>!t.is_used) || tatankaItems[0];
+      if (best?.product_url) {
+        const resp = await fetch(ANTHROPIC_API, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true'
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 150,
+            tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+            messages: [{
+              role: 'user',
+              content: 'Visit ' + best.product_url + ' and find the current price in SEK. Return ONLY JSON: {"price_sek":299,"stock":"in_stock"}'
+            }]
+          })
+        });
+        if (!resp.ok) throw new Error('API ' + resp.status);
+        const data = await resp.json();
+        const text = (data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
+        const m = text.match(/\{[^}]+\}/);
+        if (m) {
+          const parsed = JSON.parse(m[0]);
+          if (parsed.price_sek) {
+            const eur = sekToEur(parsed.price_sek);
+            const isOut = parsed.stock === 'out_of_stock' || parsed.stock === 'temp_finished';
+            const discount = isOut ? SETTINGS.discountOut : SETTINGS.discountIn;
+            newPrice = Math.round(eur * (discount/100) * 100) / 100;
+            source = 'Tatanka';
+          }
+        }
+      }
+    }
+
+    // Case 3: Upgrade/aftermarket — web search for current price
+    else {
+      const resp = await fetch(ANTHROPIC_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 150,
+          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+          messages: [{
+            role: 'user',
+            content: 'Search for current price of "' + item.name + '" Volvo C3 part. Return ONLY JSON: {"price_eur":29.99,"source":"shop name"} or {"price_eur":null} if not found.'
+          }]
+        })
+      });
+      if (!resp.ok) throw new Error('API ' + resp.status);
+      const data = await resp.json();
+      const text = (data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
+      const m = text.match(/\{[^}]+\}/);
+      if (m) {
+        const parsed = JSON.parse(m[0]);
+        if (parsed.price_eur) { newPrice = parseFloat(parsed.price_eur) * 0.7; source = parsed.source || 'web'; }
+      }
+    }
+
+    if (newPrice && newPrice > 0) {
+      openModal('confirmPriceRefresh', { item, newPrice, source });
+    } else {
+      showToast('Could not find current price online', 'error');
+    }
+
+  } catch(e) {
+    showToast('Price refresh failed: ' + e.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// WHATSAPP SHARE
+// ═══════════════════════════════════════════════════════
+
+function shareWhatsApp(id) {
+  const item = INVENTORY.find(i => i.id === id);
+  if (!item) return;
+
+  const condMap = { good: 'Good ✅', fair: 'Fair ⚠️', poor: 'Poor ❌' };
+  const cond = condMap[item.condition] || 'Not specified';
+  const price = formatEur(item.askingPrice);
+  const sek = item.askingPrice ? '(' + Math.round(item.askingPrice / SETTINGS.rate).toLocaleString() + ' SEK)' : '';
+
+  const lines = [
+    '🔧 *' + item.name + '*',
+    item.partNo ? 'Part no: ' + item.partNo : '',
+    'Condition: ' + cond,
+    '',
+    '💶 Asking price: *' + price + '* ' + sek,
+    item.notes ? '\nNotes: ' + item.notes : '',
+  ].filter(l => l !== null && l !== undefined);
+
+  const msg = lines.join('\n').trim();
+
+  if (item.photo) {
+    // Copy message to clipboard and open WhatsApp
+    // User needs to paste the message — WhatsApp URL scheme can't attach photos
+    navigator.clipboard.writeText(msg).then(() => {
+      openModal('whatsappShare', { msg, item });
+    }).catch(() => {
+      // Fallback if clipboard not available
+      openModal('whatsappShare', { msg, item });
+    });
+  } else {
+    // No photo — open WhatsApp directly with pre-filled message
+    const url = 'whatsapp://send?text=' + encodeURIComponent(msg);
+    window.open(url, '_blank');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// BULK MODE
+// ═══════════════════════════════════════════════════════
+
+let bulkQueue = []; // [{id, photo, status:'pending'|'analyzing'|'done'|'error', result}]
+
+document.addEventListener('DOMContentLoaded', () => {
+  const bc = document.getElementById('bulkCameraInput');
+  const bg = document.getElementById('bulkGalleryInput');
+  if (bc) bc.addEventListener('change', e => addToBulkQueue(e.target.files));
+  if (bg) bg.addEventListener('change', e => addToBulkQueue(e.target.files));
+});
+
+async function addToBulkQueue(files) {
+  if (!files || files.length === 0) return;
+  for (const file of files) {
+    const compressed = await compressImage(file, 1000, 0.8);
+    bulkQueue.push({
+      id: Date.now() + Math.random(),
+      photo: compressed.b64,
+      dataUrl: compressed.dataUrl,
+      status: 'pending',
+      result: null,
+      box: '',
+      qty: 1,
+      price: '',
+      condition: ''
+    });
+  }
+  renderBulkQueue();
+  document.getElementById('bulkAnalyzeBtn').disabled = false;
+  document.getElementById('bulkCount').textContent = bulkQueue.length + ' queued';
+  // Flash the photo area
+  const area = document.getElementById('bulkPhotoArea');
+  area.classList.add('has-photo');
+  area.innerHTML = `<img src="${bulkQueue[bulkQueue.length-1].dataUrl}" alt="">`;
+  setTimeout(() => {
+    area.classList.remove('has-photo');
+    area.innerHTML = `<div class="photo-placeholder"><div class="photo-icon">📷</div><div class="photo-label">TAP TO ADD MORE</div><div class="photo-sublabel">${bulkQueue.length} photo${bulkQueue.length>1?'s':''} queued</div></div>`;
+    area.onclick = () => document.getElementById('bulkCameraInput').click();
+  }, 800);
+}
+
+function renderBulkQueue() {
+  const el = document.getElementById('bulkQueue');
+  if (bulkQueue.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = bulkQueue.map((item, i) => {
+    const icon = item.status === 'pending' ? '⏳' : item.status === 'analyzing' ? '🔍' : item.status === 'done' ? '✅' : '❌';
+    const name = item.result ? item.result[0]?.name || '—' : item.status === 'analyzing' ? 'Analyzing...' : 'Pending';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px">
+      <img src="${item.dataUrl}" style="width:44px;height:44px;border-radius:5px;object-fit:cover;flex-shrink:0">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${icon} ${name}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">Photo ${i+1}</div>
+      </div>
+      <button onclick="removeBulkItem(${i})" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function removeBulkItem(i) {
+  bulkQueue.splice(i, 1);
+  renderBulkQueue();
+  document.getElementById('bulkCount').textContent = bulkQueue.length + ' queued';
+  if (bulkQueue.length === 0) document.getElementById('bulkAnalyzeBtn').disabled = true;
+}
+
+async function analyzeBulkQueue() {
+  const apiKey = getApiKey();
+  if (!apiKey) { promptApiKey('none'); return; }
+
+  const pending = bulkQueue.filter(i => i.status === 'pending');
+  if (pending.length === 0) { showToast('Nothing to analyze', 'error'); return; }
+
+  document.getElementById('bulkAnalyzeBtn').disabled = true;
+  document.getElementById('bulkAnalyzeBtn').textContent = '⏳ Analyzing...';
+  showToast('Analyzing ' + pending.length + ' parts in parallel...', 'success');
+
+  // Fire all API calls simultaneously
+  const promises = pending.map(item => analyzeSingleBulkItem(item, apiKey));
+  await Promise.allSettled(promises);
+
+  document.getElementById('bulkAnalyzeBtn').textContent = '🔍 ANALYZE ALL';
+  renderBulkQueue();
+  renderBulkReview();
+  document.getElementById('bulkReview').style.display = 'block';
+  showToast('Analysis complete!', 'success');
+}
+
+async function analyzeSingleBulkItem(item, apiKey) {
+  item.status = 'analyzing';
+  renderBulkQueue();
+
+  try {
+    // Try OCR first
+    const ocr = await detectPartNumber(item.photo, '');
+    if (ocr) {
+      item.result = [ocr];
+      item.status = 'done';
+      if (ocr.tatanka) {
+        const suggested = getSuggestedPrice(ocr.tatanka);
+        if (suggested) item.price = suggested.toFixed(2);
+      }
+      return;
+    }
+
+    // Full AI analysis
+    const prompt = `You are an expert on Volvo C3 military vehicles. Identify this spare part.
+Return ONLY a JSON array of 1 best guess: [{"name":"English name","sv":"Swedish name","no":"part number","group":"group number","confidence":85,"reason":"one sentence"}]`;
+
+    const resp = await fetch(ANTHROPIC_API, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: item.photo } },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+
+    if (!resp.ok) throw new Error('API ' + resp.status);
+    const data = await resp.json();
+    let text = (data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
+    const m = text.match(/\[\s*\{[\s\S]*?\}\s*\]/);
+    if (!m) throw new Error('No JSON');
+    let guesses = JSON.parse(m[0]);
+    // Enrich with PARTS_DB and Tatanka
+    guesses = guesses.map(g => {
+      const dbMatch = typeof PARTS_DB !== 'undefined' ?
+        PARTS_DB.find(p => p.no === g.no || p.no.split('-')[0] === g.no.split('-')[0]) : null;
+      if (dbMatch) { g.name = g.name||dbMatch.name; g.sv = g.sv||dbMatch.sv; g.no = g.no||dbMatch.no; }
+      g.tatanka = getTatankaData(g.no);
+      return g;
+    });
+    item.result = guesses;
+    item.status = 'done';
+    // Auto-suggest price
+    if (guesses[0]?.tatanka) {
+      const suggested = getSuggestedPrice(guesses[0].tatanka);
+      if (suggested) item.price = suggested.toFixed(2);
+    }
+  } catch(e) {
+    item.status = 'error';
+    item.errorMsg = e.message;
+  }
+}
+
+function renderBulkReview() {
+  const el = document.getElementById('bulkReviewList');
+  const done = bulkQueue.filter(i => i.status === 'done' && i.result);
+  if (done.length === 0) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">No results yet.</div>'; return; }
+
+  el.innerHTML = done.map((item, i) => {
+    const g = item.result[0];
+    const thumb = g?.tatanka?.[0]?.image_local ?
+      `<img src="${g.tatanka[0].image_local}" style="width:48px;height:48px;border-radius:5px;object-fit:cover;border:1px solid var(--border)">` :
+      `<img src="${item.dataUrl}" style="width:48px;height:48px;border-radius:5px;object-fit:cover;border:1px solid var(--border)">`;
+    return `<div style="border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:10px;background:var(--surface2)">
+      <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:8px">
+        ${thumb}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600">${g?.name||'Unknown'}</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent)">${g?.no||'—'}</div>
+          <div style="font-size:11px;color:var(--muted)">${g?.reason||''}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+        <div><label style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);display:block;margin-bottom:3px">BOX *</label>
+          <input type="text" placeholder="Box #" value="${item.box}" oninput="bulkQueue.filter(x=>x.status==='done')[${i}].box=this.value" style="padding:6px 8px;font-size:14px"></div>
+        <div><label style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);display:block;margin-bottom:3px">QTY</label>
+          <input type="number" value="${item.qty||1}" min="1" oninput="bulkQueue.filter(x=>x.status==='done')[${i}].qty=parseInt(this.value)||1" style="padding:6px 8px;font-size:14px"></div>
+        <div><label style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);display:block;margin-bottom:3px">PRICE EUR</label>
+          <input type="number" value="${item.price||''}" placeholder="0.00" step="0.01" oninput="bulkQueue.filter(x=>x.status==='done')[${i}].price=this.value" style="padding:6px 8px;font-size:14px"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function saveAllBulk() {
+  const done = bulkQueue.filter(i => i.status === 'done' && i.result);
+  const missing = done.filter(i => !i.box);
+  if (missing.length > 0) { showToast('Fill in box numbers for all parts', 'error'); return; }
+
+  let saved = 0;
+  for (const item of done) {
+    const g = item.result[0];
+    INVENTORY.push({
+      id: Date.now() + Math.random(),
+      partNo: g?.no || '',
+      name: g?.name || 'Unknown',
+      nameSv: g?.sv || '',
+      group: g?.group || '',
+      box: item.box,
+      qty: item.qty || 1,
+      condition: item.condition || null,
+      askingPrice: parseFloat(item.price) || 0,
+      photo: item.dataUrl,
+      status: 'available',
+      addedDate: new Date().toISOString(),
+      isCustom: false,
+      isUnknown: false,
+    });
+    saved++;
+  }
+  saveInventory();
+  bulkQueue = [];
+  renderBulkQueue();
+  document.getElementById('bulkReview').style.display = 'none';
+  document.getElementById('bulkAnalyzeBtn').disabled = true;
+  document.getElementById('bulkCount').textContent = '0 queued';
+  showToast(saved + ' parts saved to inventory!', 'success');
+  showScreen('inventory');
+}
+
+
+
+// ═══════════════════════════════════════════════════════
+// REFRESH PRICE
 // ═══════════════════════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════════════════════
 
-// Load PARTS_DB from window scope (set by PARTS_DB.js)
-window.addEventListener('load', () => {
-  if (typeof window.PARTS_DB_DATA !== 'undefined') {
+// Load PARTS_DB — try immediately, then on DOMContentLoaded, then on load
+// This handles all timing scenarios across browsers and PWA modes
+function tryLoadPartsDB() {
+  if (typeof window.PARTS_DB_DATA !== 'undefined' && window.PARTS_DB_DATA.length > 0) {
     PARTS_DB = window.PARTS_DB_DATA;
+    console.log('PARTS_DB loaded:', PARTS_DB.length, 'parts');
+    return true;
   }
+  return false;
+}
+
+function bootApp() {
+  tryLoadPartsDB();
   init();
-});
+  // Re-check after a short delay in case PARTS_DB.js loaded late
+  setTimeout(() => {
+    if (PARTS_DB.length === 0 && tryLoadPartsDB()) {
+      console.log('PARTS_DB late-loaded, refreshing UI');
+      renderCatalogue();
+      updateHeaderStats();
+    }
+  }, 500);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootApp);
+} else {
+  bootApp();
+}
 </script>
 
 <!-- PARTS_DB.js should be included here -->
-<!-- <script src="PARTS_DB.js"></script> -->
+<script src="PARTS_DB.js"></script>
 
 </body>
 </html>
