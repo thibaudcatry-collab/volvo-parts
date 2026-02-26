@@ -1435,28 +1435,54 @@ Return ONLY JSON:
           if (sys.includes(key)) { pool = pool.filter(p => groups.includes(p.g)); break; }
         }
       }
-      const sample = pool.slice(0, 60);
-      candidates = '\n\nKnown C3 parts in this system:\n' + sample.map(p => p.no + ': ' + p.name + ' (' + p.sv + ')').join('\n');
+      // Keyword-rank candidates: parts matching the visual description float to top
+      const descKeywords = [
+        description.part_type, description.system, description.connections, description.notable
+      ].filter(Boolean).join(' ').toLowerCase().split(/\s+/).filter(w => w.length > 3);
+
+      const scoredPool = pool.map(p => {
+        let score = 0;
+        const haystack = (p.name + ' ' + p.sv).toLowerCase();
+        for (const kw of descKeywords) {
+          if (haystack.includes(kw)) score += 10;
+          if (kw.length > 4 && haystack.includes(kw.slice(0, -1))) score += 5;
+        }
+        return { p, score };
+      }).sort((a, b) => b.score - a.score);
+
+      const topRelevant = scoredPool.filter(x => x.score > 0).slice(0, 30).map(x => x.p);
+      const rest = scoredPool.filter(x => x.score === 0).slice(0, 30).map(x => x.p);
+      const sample = [...topRelevant, ...rest];
+
+      const relevantNote = topRelevant.length > 0 ? '\\n\\nMost relevant C3 parts (ranked by match):\\n' : '\\n\\nKnown C3 parts in this system:\\n';
+      candidates = relevantNote + sample.map(p => p.no + ': ' + p.name + ' (' + p.sv + ')').join('\\n');
     }
 
-    const idPrompt = `You are an expert on Volvo C3 series military vehicles.
+    const idPrompt = `You are an expert mechanic and parts specialist for Volvo C3 series military vehicles (C303, C304, C306, TGB 11/13/20).
 
-This part has been visually described as:
+A part has been visually identified as:
 - Type: ${description.part_type || 'unknown'}
 - Material: ${description.material || 'unknown'}
-- Connections: ${description.connections || 'unknown'}
+- Connections/ends: ${description.connections || 'unknown'}
 - Notable features: ${description.notable || 'none'}
-- Visible text/numbers: ${description.visible_text || 'none'}
+- Visible text: ${description.visible_text || 'none'}
 - Vehicle system: ${description.system || 'unknown'}
-${vocabContext ? '- ' + vocabContext : ''}
+${vocabContext ? '- System vocabulary: ' + vocabContext : ''}
 ${candidates}
 
-Based on this description, identify the 3 most likely Volvo C3 part numbers.
-${description.visible_text ? 'IMPORTANT: visible text "' + description.visible_text + '" — if this matches a part number, use it with confidence 95+.' : ''}
+TASK: Give the 3 most likely part numbers from the Volvo C3 catalogue.
+
+REASONING RULES:
+1. If you recognise the part type clearly (e.g. clutch pedal, brake pedal, accelerator pedal), search for ALL variants of that part — different pedals share the same visual language.
+2. A pedal = look for pedal, arm, lever in the list. A bracket = look for fäste, konsol. A seal = look for tätning, packning.
+3. If the exact part is not in the candidate list, use your knowledge of Volvo C3 to suggest the most likely number anyway — do NOT return "unable to identify" or "not in database".
+4. Always return 3 guesses. Lower confidence is fine — a 40% guess is more useful than giving up.
+5. For parts with a clear function (pedal, pump, valve, filter), confidence should be at least 50% even without a part number visible.
+${description.visible_text ? '6. PRIORITY: visible text "' + description.visible_text + '" — if this is a part number, use it with confidence 95+.' : ''}
 
 Return ONLY a JSON array (best match first):
-[{"name":"English name","sv":"Swedish name","no":"part number","group":"group number","confidence":85,"reason":"one sentence referencing specific visual features"}]
-Confidence calibration: 90-100=part number visible, 70-89=certain part type+strong match, 50-69=probable match, below 50=uncertain guess.
+[{"name":"English name","sv":"Swedish name","no":"part number e.g. 644768","group":"group number e.g. 41","confidence":75,"reason":"one sentence — name the specific visual feature that led to this guess"}]
+Confidence: 90-100=part number read, 70-89=certain type+strong catalogue match, 50-69=probable, 30-49=uncertain, below 30=weak guess.
 Return ONLY the JSON array.`;
 
     const idResp = await fetch(ANTHROPIC_API, {
