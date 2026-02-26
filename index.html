@@ -1436,11 +1436,7 @@ Return ONLY JSON:
         }
       }
       const sample = pool.slice(0, 60);
-      candidates = '
-
-Known C3 parts in this system:
-' + sample.map(p => `${p.no}: ${p.name} (${p.sv})`).join('
-');
+      candidates = '\n\nKnown C3 parts in this system:\n' + sample.map(p => p.no + ': ' + p.name + ' (' + p.sv + ')').join('\n');
     }
 
     const idPrompt = `You are an expert on Volvo C3 series military vehicles.
@@ -1608,7 +1604,7 @@ function renderGuesses(guesses, description, wasSonnet) {
       <div class="guess-info">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
           <div class="guess-rank">MATCH #${i+1}</div>
-          ${isOCR ? '<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;background:var(--green);color:#000;padding:1px 5px;border-radius:3px">SCANNED</span>' : ''}
+          ${isOCR ? '<span style="font-family:IBM Plex Mono,monospace;font-size:9px;background:var(--green);color:#000;padding:1px 5px;border-radius:3px">SCANNED</span>' : ''}
         </div>
         <div class="guess-name">${g.name || 'Unknown Part'}</div>
         <div class="guess-no">${g.no || '—'}</div>
