@@ -620,6 +620,7 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
           <button class="btn btn-secondary btn-sm" onclick="addAsUnknown()">❓ Unknown</button>
           <button class="btn btn-danger btn-sm" onclick="resetIdentify()">✕ New Photo</button>
         </div>
+        <div id="sonnetBannerStep2" style="display:none;margin-top:8px"></div>
       </div>
     </div>
 
@@ -1215,6 +1216,17 @@ async function compressImage(file, maxWidth, quality) {
 // SMART PART NUMBER DETECTION
 // ═══════════════════════════════════════════════════════
 
+const GROUP_VOCABULARY = {
+  '20,21,22,23,25,26,27': 'engine block, cylinder head, crankshaft, camshaft, piston, connecting rod, oil pan, oil pump, water pump, thermostat, radiator hose, air filter, carburettor, fuel pump, fuel tank, exhaust manifold, intake manifold, fan belt',
+  '31,32,33,34,35,36,37,38,39': 'battery, alternator, starter motor, ignition coil, distributor, spark plug, fuse, relay, wiring harness, headlamp, tail lamp, switch, instrument panel, speedometer, temperature gauge',
+  '41,43,45': 'clutch disc, pressure plate, release bearing, gearbox, gear lever, propeller shaft, universal joint, slip yoke, centre bearing, CV joint, driveshaft',
+  '46,48': 'front axle, rear axle, hub, wheel bearing, stub axle, half shaft, power takeoff, PTO shaft',
+  '51,52,55,58': 'brake drum, brake disc, brake pad, brake shoe, brake caliper, master cylinder, wheel cylinder, brake pipe, brake hose, handbrake cable, parking brake',
+  '61,64': 'steering gear, steering rod, drag link, track rod, tie rod end, steering arm, pitman arm, steering column',
+  '71,72,73,77': 'chassis frame, leaf spring, coil spring, shock absorber, spring shackle, radius arm, wheel rim, lug nut, tyre',
+  '81,83,84,85,86,87,88': 'cab body, door, door lock, hinge, windscreen, side window, seat, seat belt, heating unit, heater hose, mudflap, spare wheel holder',
+};
+
 async function detectPartNumber(photoB64, groupFilter) {
   // Quick OCR prompt — much shorter/faster than full identification
   const apiKey = getApiKey();
@@ -1237,7 +1249,7 @@ async function detectPartNumber(photoB64, groupFilter) {
           role: 'user',
           content: [
             { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: photoB64 } },
-            { type: 'text', text: 'Look for any part number printed on this item (Volvo part numbers are 4-7 digits, sometimes with a dash and digit e.g. 681609-4 or 461537-3). Return ONLY the part number if you can clearly read one, or return the word NONE if no part number is visible.' }
+            { type: 'text', text: 'Look carefully at ALL text visible in this image — on labels, boxes, stamped metal, stickers, or written anywhere. Find any part number (Volvo part numbers: 4-7 digits, optionally followed by a letter like B or a dash+digit, e.g. 681609-4, 461537-3, 262257B). Return ONLY the part number if clearly visible, or NONE if not found. Do not guess — only report what you can actually read.' }
           ]
         }]
       })
@@ -1247,27 +1259,34 @@ async function detectPartNumber(photoB64, groupFilter) {
 
     if (!raw || raw === 'NONE' || raw.toLowerCase().includes('none')) return null;
 
-    // Extract first number-like pattern from response
-    const m = raw.match(/\d{4,7}(?:-\d)?/);
-    if (!m) return null;
-    const detected = m[0];
+    // Extract part number patterns — handles: 461537-3, 262257B, 681609-4, 461087
+    // Volvo C3 patterns: digits with optional -digit suffix OR digits with B/A suffix
+    const patterns = [
+      /\d{5,7}-\d/g,      // 461537-3 style
+      /\d{5,7}[A-Z]/g,    // 262257B style  
+      /\d{5,7}/g,          // plain number
+      /\d{4,6}-\d/g,      // shorter with suffix
+    ];
+    let detected = null;
+    for (const pat of patterns) {
+      const m = raw.match(pat);
+      if (m) { detected = m[0]; break; }
+    }
+    if (!detected) return null;
 
-    // Look up in PARTS_DB
+    // Look up in PARTS_DB — try several matching strategies
     let filteredDB = PARTS_DB;
     if (groupFilter) {
       const groups = groupFilter.split(',');
       filteredDB = PARTS_DB.filter(p => groups.includes(p.g));
     }
 
-    // Try exact match first, then base number match
-    let dbMatch = filteredDB.find(p => p.no === detected) ||
-                  filteredDB.find(p => p.no.startsWith(detected.split('-')[0]));
+    // Normalise: strip B/A suffix and dash-digit for base comparison
+    const baseDetected = detected.replace(/[A-Z]$/, '').replace(/-\d$/, '');
 
-    if (!dbMatch) {
-      // Try stripping the suffix
-      const base = detected.replace(/-\d$/, '');
-      dbMatch = filteredDB.find(p => p.no.replace(/-\d$/, '') === base);
-    }
+    let dbMatch = filteredDB.find(p => p.no === detected) ||
+                  filteredDB.find(p => p.no.replace(/[A-Z]$/, '').replace(/-\d$/, '') === baseDetected) ||
+                  filteredDB.find(p => p.no.startsWith(baseDetected));
 
     if (!dbMatch) return null;
 
@@ -1290,75 +1309,58 @@ async function detectPartNumber(photoB64, groupFilter) {
   }
 }
 
-async function analyzePhoto() {
+async function analyzePhoto(useSonnet = false) {
   const apiKey = getApiKey();
-  if (!apiKey) {
-    promptApiKey('analyze');
-    return;
-  }
+  if (!apiKey) { promptApiKey('analyze'); return; }
 
   document.getElementById('analyzeBtn').disabled = true;
   document.getElementById('analyzeSpinner').style.display = 'inline-block';
-  document.getElementById('analyzeBtnText').textContent = 'ANALYZING...';
+  document.getElementById('analyzeBtnText').textContent = useSonnet ? 'ANALYZING WITH SONNET...' : 'ANALYZING...';
 
   const groupFilter = document.getElementById('groupFilter').value;
-  const filterText = groupFilter ? `Focus on parts from groups: ${groupFilter}.` : '';
+  const model = useSonnet ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001';
 
-  // Build context from PARTS_DB
-  let partsContext = '';
-  if (typeof PARTS_DB !== 'undefined' && PARTS_DB.length > 0) {
-    let filteredParts = PARTS_DB;
-    if (groupFilter) {
-      const groups = groupFilter.split(',');
-      filteredParts = PARTS_DB.filter(p => groups.includes(p.g));
+  // ── SMART PART NUMBER DETECTION (skip AI if number readable) ──
+  if (!useSonnet) {
+    const quickMatch = await detectPartNumber(currentPhoto, groupFilter);
+    if (quickMatch) {
+      currentGuesses = [quickMatch];
+      identifyAttempt = 0;
+      showStep(2);
+      renderGuesses([quickMatch]);
+      document.getElementById('analyzeSpinner').style.display = 'none';
+      document.getElementById('analyzeBtnText').textContent = '🔍 ANALYZE PHOTO';
+      document.getElementById('analyzeBtn').disabled = false;
+      return;
     }
-    // Take sample to avoid token limits
-    const sample = filteredParts.slice(0, 80);
-    partsContext = '\n\nKnown parts database (subset):\n' +
-      sample.map(p => `${p.no}: ${p.name} (${p.sv})`).join('\n');
   }
 
-  const prompt = `You are an expert on Volvo C3 series military vehicles (C303, C304, C306, TGB 11/13/20).
-
-Analyze this photo of a spare part and identify it.
-${filterText}
-${partsContext}
-
-Return ONLY a JSON array of exactly 3 guesses, ordered by confidence (highest first):
-[
-  {
-    "name": "English part name",
-    "sv": "Swedish name if known",
-    "no": "part number like 461537-3",
-    "group": "group number like 21",
-    "confidence": 85,
-    "reason": "brief explanation why you think this is the part"
+  // ── BUILD GROUP VOCABULARY CONTEXT (improvement 3) ──
+  let vocabContext = '';
+  if (groupFilter && GROUP_VOCABULARY[groupFilter]) {
+    vocabContext = `Parts in this system include: ${GROUP_VOCABULARY[groupFilter]}.`;
   }
-]
 
-Rules:
-- Use real Volvo C3 part numbers from the database if possible
-- confidence is 0-100
-- If unsure, still give 3 best guesses with lower confidence
-- Return ONLY the JSON array, no other text`;
-
-  // ── SMART PART NUMBER DETECTION ──
-  // Scan image for text first using a tiny fast prompt
-  // If we find a Volvo part number that matches the catalogue, skip full AI
-  const quickMatch = await detectPartNumber(currentPhoto, groupFilter);
-  if (quickMatch) {
-    currentGuesses = [quickMatch];
-    identifyAttempt = 0;
-    showStep(2);
-    renderGuesses([quickMatch]);
-    document.getElementById('analyzeSpinner').style.display = 'none';
-    document.getElementById('analyzeBtnText').textContent = '🔍 ANALYZE PHOTO';
-    document.getElementById('analyzeBtn').disabled = false;
-    return;
-  }
+  const images = [
+    { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: currentPhoto } },
+    ...extraAngles.map(b64 => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } }))
+  ];
+  const photoCount = images.length;
 
   try {
-    const response = await fetch(ANTHROPIC_API, {
+    // ── STAGE 1: Visual description (improvement 1) ──
+    document.getElementById('analyzeBtnText').textContent = useSonnet ? 'STAGE 1/2 SONNET...' : 'STAGE 1/2...';
+
+    const descPrompt = `You are an expert mechanic specialising in Volvo C3 series military vehicles (C303, C304, C306, TGB 11/13/20).
+Look at ${photoCount > 1 ? 'these ' + photoCount + ' photos of the same part from different angles' : 'this photo of a part'}.
+
+FIRST: Read any text, numbers, markings, or part numbers visible anywhere in the image(s).
+THEN: Describe what you see physically — shape, size, material, connections, notable features.
+
+Return ONLY JSON:
+{"visible_text":"any text/numbers you can read, or empty string","part_type":"e.g. propeller shaft, brake disc, fuel pump","material":"steel/rubber/aluminium/etc","connections":"e.g. universal joint at both ends","notable":"any distinctive features","system":"which vehicle system: engine/transmission/brakes/suspension/steering/electrical/body"}`;
+
+    const descResp = await fetch(ANTHROPIC_API, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1367,62 +1369,121 @@ Rules:
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 800,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: currentPhoto } },
-            ...extraAngles.map(b64 => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } })),
-            { type: 'text', text: extraAngles.length > 0
-                ? prompt.replace('this photo', `these ${extraAngles.length + 1} photos showing different angles`)
-                : prompt }
-          ]
-        }]
+        model: model,
+        max_tokens: 300,
+        messages: [{ role: 'user', content: [...images, { type: 'text', text: descPrompt }] }]
       })
     });
+    if (!descResp.ok) throw new Error('API error ' + descResp.status);
+    const descData = await descResp.json();
+    let descText = (descData.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
+    const descMatch = descText.match(/\{[\s\S]*\}/);
+    let description = {};
+    if (descMatch) { try { description = JSON.parse(descMatch[0]); } catch(e) {} }
 
-    if (!response.ok) throw new Error('API error ' + response.status + ': ' + await response.text());
-    const data = await response.json();
-    let text = (data.content || []).map(b => b.text || '').join('');
-    window._lastApiResponse = text; // for debug
-    text = text.replace(/```json|```/g, '').trim();
+    // Store description for display
+    window._lastDescription = description;
 
-    // Extract JSON array robustly — handle partial responses or extra text
-    const jsonMatch = text.match(/\[\s*\{[\s\S]*\}\s*\]/);
+    // ── STAGE 2: Part identification with description context ──
+    document.getElementById('analyzeBtnText').textContent = useSonnet ? 'STAGE 2/2 SONNET...' : 'STAGE 2/2...';
+
+    // Build candidate list from PARTS_DB filtered by detected system
+    let candidates = '';
+    if (typeof PARTS_DB !== 'undefined' && PARTS_DB.length > 0) {
+      let pool = PARTS_DB;
+      if (groupFilter) {
+        const groups = groupFilter.split(',');
+        pool = pool.filter(p => groups.includes(p.g));
+      } else if (description.system) {
+        // Auto-filter by detected system
+        const sysMap = {
+          'engine': ['20','21','22','23','25','26','27'],
+          'transmission': ['41','43','45','46','48'],
+          'brakes': ['51','52','55','58'],
+          'suspension': ['71','72','73','77'],
+          'steering': ['61','64'],
+          'electrical': ['31','32','33','34','35','36','37','38','39'],
+          'body': ['81','83','84','85','86','87','88'],
+        };
+        const sys = description.system.toLowerCase();
+        for (const [key, groups] of Object.entries(sysMap)) {
+          if (sys.includes(key)) { pool = pool.filter(p => groups.includes(p.g)); break; }
+        }
+      }
+      const sample = pool.slice(0, 60);
+      candidates = '
+
+Known C3 parts in this system:
+' + sample.map(p => `${p.no}: ${p.name} (${p.sv})`).join('
+');
+    }
+
+    const idPrompt = `You are an expert on Volvo C3 series military vehicles.
+
+This part has been visually described as:
+- Type: ${description.part_type || 'unknown'}
+- Material: ${description.material || 'unknown'}
+- Connections: ${description.connections || 'unknown'}
+- Notable features: ${description.notable || 'none'}
+- Visible text/numbers: ${description.visible_text || 'none'}
+- Vehicle system: ${description.system || 'unknown'}
+${vocabContext ? '- ' + vocabContext : ''}
+${candidates}
+
+Based on this description, identify the 3 most likely Volvo C3 part numbers.
+${description.visible_text ? 'IMPORTANT: visible text "' + description.visible_text + '" — if this matches a part number, use it with confidence 95+.' : ''}
+
+Return ONLY a JSON array (best match first):
+[{"name":"English name","sv":"Swedish name","no":"part number","group":"group number","confidence":85,"reason":"one sentence referencing specific visual features"}]
+Confidence calibration: 90-100=part number visible, 70-89=certain part type+strong match, 50-69=probable match, below 50=uncertain guess.
+Return ONLY the JSON array.`;
+
+    const idResp = await fetch(ANTHROPIC_API, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: model,
+        max_tokens: 600,
+        messages: [{ role: 'user', content: [{ type: 'text', text: idPrompt }] }]
+      })
+    });
+    if (!idResp.ok) throw new Error('API error ' + idResp.status);
+    const idData = await idResp.json();
+    let idText = (idData.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
+    window._lastApiResponse = idText;
+
+    const jsonMatch = idText.match(/\[\s*\{[\s\S]*\}\s*\]/);
     if (!jsonMatch) throw new Error('No JSON array found in response');
     let guesses = JSON.parse(jsonMatch[0]);
     if (!Array.isArray(guesses)) throw new Error('Not array');
-    // Ensure we have at least 1 valid guess
     guesses = guesses.filter(g => g && (g.name || g.no));
     if (guesses.length === 0) throw new Error('No valid guesses in response');
 
-    // Enrich guesses with PARTS_DB data
+    // Enrich with PARTS_DB + Tatanka
     guesses = guesses.map(g => {
-      const dbMatch = (typeof PARTS_DB !== 'undefined') ?
+      const dbMatch = typeof PARTS_DB !== 'undefined' ?
         PARTS_DB.find(p => p.no === g.no || p.no.split('-')[0] === g.no.split('-')[0]) : null;
-      if (dbMatch) {
-        g.name = g.name || dbMatch.name;
-        g.sv = g.sv || dbMatch.sv;
-        g.no = g.no || dbMatch.no;
-        g.group = g.group || dbMatch.g;
-      }
+      if (dbMatch) { g.name=g.name||dbMatch.name; g.sv=g.sv||dbMatch.sv; g.no=g.no||dbMatch.no; g.group=g.group||dbMatch.g; }
       g.tatanka = getTatankaData(g.no);
       return g;
     });
 
+    // Attach description for display
+    guesses._description = description;
     currentGuesses = guesses;
     identifyAttempt = 0;
     showStep(2);
-    renderGuesses(guesses);
+    renderGuesses(guesses, description, useSonnet);
 
   } catch(err) {
     console.error('Analysis error:', err);
     let msg = err.message;
-    // Show first 80 chars of raw response to help debug
-    if (window._lastApiResponse) {
-      msg += ' | Response: ' + window._lastApiResponse.substring(0, 80);
-    }
+    if (window._lastApiResponse) msg += ' | ' + window._lastApiResponse.substring(0, 80);
     showToast('Analysis failed: ' + msg, 'error');
     document.getElementById('analyzeBtn').disabled = false;
   }
@@ -1431,41 +1492,133 @@ Rules:
   document.getElementById('analyzeBtnText').textContent = '🔍 ANALYZE PHOTO';
 }
 
-function renderGuesses(guesses) {
+
+function renderGuesses(guesses, description, wasSonnet) {
   const container = document.getElementById('guessResults');
   if (!guesses || guesses.length === 0) {
     container.innerHTML = '<div class="empty"><div class="empty-icon">🤷</div><div class="empty-title">NO MATCHES FOUND</div><div class="empty-text">Try a different angle or use the Unknown option.</div></div>';
     return;
   }
 
-  container.innerHTML = guesses.map((g, i) => {
+  const desc = description || window._lastDescription || {};
+  const maxConf = Math.max(...guesses.map(g => g.confidence || 0));
+  const allLowConf = maxConf < 50;
+
+  // ── AI SEES panel (improvement 1 output) ──
+  let descPanel = '';
+  if (desc.part_type || desc.visible_text) {
+    const visText = desc.visible_text ? `<div style="margin-top:5px"><span style="color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:10px">TEXT READ:</span> <span style="font-size:12px;color:var(--green)">${desc.visible_text}</span></div>` : '';
+    descPanel = `<div style="background:var(--surface2);border:1px solid var(--border2);border-left:3px solid var(--accent);border-radius:var(--radius);padding:10px 12px;margin-bottom:12px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:4px;letter-spacing:1px">🤖 AI SEES</div>
+      <div style="font-size:13px;font-weight:500;color:var(--text)">${desc.part_type || ''}${desc.material ? ' · <span style="color:var(--text2)">' + desc.material + '</span>' : ''}</div>
+      ${desc.connections ? `<div style="font-size:11px;color:var(--text2);margin-top:2px">${desc.connections}</div>` : ''}
+      ${desc.notable ? `<div style="font-size:11px;color:var(--text2)">${desc.notable}</div>` : ''}
+      ${visText}
+    </div>`;
+  }
+
+  // ── Sonnet fallback banner (improvement 4) ──
+  let sonnetBanner = '';
+  if (allLowConf && !wasSonnet) {
+    sonnetBanner = `<div style="background:rgba(232,184,75,0.08);border:1px solid var(--accent);border-radius:var(--radius);padding:12px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
+      <div style="flex:1">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);font-weight:600">LOW CONFIDENCE — Best: ${maxConf}%</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:3px">Haiku is uncertain. Try Sonnet for deeper analysis (slower, ~10× cost).</div>
+      </div>
+      <button onclick="analyzePhoto(true)" style="background:var(--accent);color:#000;border:none;border-radius:6px;padding:8px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">TRY SONNET →</button>
+    </div>`;
+  } else if (wasSonnet) {
+    sonnetBanner = `<div style="background:rgba(82,199,122,0.08);border:1px solid var(--green);border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--green)">✦ SONNET ANALYSIS</div>`;
+  }
+
+  // ── Tatanka visual candidates (improvement 2) ──
+  // Find Tatanka products that visually match based on part type keywords
+  let tatankaVisuals = '';
+  if (desc.part_type && typeof TATANKA_DB !== 'undefined') {
+    const keywords = desc.part_type.toLowerCase().split(/\s+/);
+    const matches = Object.values(TATANKA_DB)
+      .filter(t => t.image_local && keywords.some(k =>
+        k.length > 3 && (t.name||'').toLowerCase().includes(k)))
+      .slice(0, 4);
+    if (matches.length > 0) {
+      tatankaVisuals = `<div style="margin-bottom:12px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:6px;letter-spacing:1px">SIMILAR PARTS ON TATANKA</div>
+        <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">
+          ${matches.map(t => `<div style="flex-shrink:0;text-align:center;cursor:pointer" onclick="selectTatankaCandidate('${t.base_no}')">
+            <img src="${t.image_local}" style="width:56px;height:56px;border-radius:6px;object-fit:cover;border:1px solid var(--border)">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);margin-top:2px;width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.name}</div>
+          </div>`).join('')}
+        </div>
+      </div>`;
+    }
+  }
+
+  // ── Confidence label helper (improvement 5) ──
+  function confLabel(c) {
+    if (c >= 90) return { label: 'CERTAIN', color: 'var(--green)' };
+    if (c >= 70) return { label: 'LIKELY',  color: 'var(--green)' };
+    if (c >= 50) return { label: 'POSSIBLE', color: 'var(--accent)' };
+    if (c >= 30) return { label: 'UNCERTAIN', color: '#ff8c42' };
+    return          { label: 'GUESS',    color: 'var(--red)' };
+  }
+
+  const cards = guesses.map((g, i) => {
     const tatankaItems = g.tatanka || [];
     const bestTatanka = tatankaItems.find(t => !t.is_used) || tatankaItems[0];
     const priceEur = bestTatanka ? sekToEur(bestTatanka.price_sek) : null;
-    const thumb = bestTatanka && bestTatanka.image_local ?
-      `<img class="guess-thumb" src="${bestTatanka.image_local}" alt="">` :
-      `<div class="guess-thumb-placeholder">🔧</div>`;
-    const confColor = g.confidence >= 70 ? 'var(--green)' : g.confidence >= 40 ? 'var(--accent)' : 'var(--red)';
+
+    // Show Tatanka image if available, else photo thumbnail, else icon
+    const thumb = bestTatanka && bestTatanka.image_local
+      ? `<img class="guess-thumb" src="${bestTatanka.image_local}" alt="" title="Tatanka reference photo">`
+      : currentPhoto
+        ? `<img class="guess-thumb" src="data:image/jpeg;base64,${currentPhoto}" alt="" style="opacity:0.6">`
+        : `<div class="guess-thumb-placeholder">🔧</div>`;
+
+    const conf = g.confidence || 0;
+    const { label, color } = confLabel(conf);
+    const isOCR = g.fromOCR;
 
     return `<div class="guess-card" onclick="selectGuess(${i},this)" id="guess${i}">
       ${thumb}
       <div class="guess-info">
-        <div class="guess-rank">MATCH #${i+1}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+          <div class="guess-rank">MATCH #${i+1}</div>
+          ${isOCR ? '<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;background:var(--green);color:#000;padding:1px 5px;border-radius:3px">SCANNED</span>' : ''}
+        </div>
         <div class="guess-name">${g.name || 'Unknown Part'}</div>
         <div class="guess-no">${g.no || '—'}</div>
         ${g.reason ? `<div class="guess-desc">${g.reason}</div>` : ''}
         <div class="conf-bar-wrap">
-          <div class="conf-bar"><div class="conf-fill" style="width:${g.confidence||0}%;background:${confColor}"></div></div>
-          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:${confColor}">${g.confidence||0}%</span>
+          <div class="conf-bar"><div class="conf-fill" style="width:${conf}%;background:${color}"></div></div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:${color};font-weight:600">${conf}%</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:${color};margin-left:3px">${label}</span>
         </div>
         <div class="guess-meta">
           ${tatankaItems.length > 0 ? getStockBadge(bestTatanka.stock) : '<span class="badge badge-muted">Not on Tatanka</span>'}
           ${priceEur ? `<span class="badge badge-green">~${formatEur(priceEur)}</span>` : ''}
+          ${bestTatanka?.image_local ? '<span class="badge badge-muted" style="font-size:9px">📸 ref photo</span>' : ''}
         </div>
       </div>
     </div>`;
   }).join('');
+
+  container.innerHTML = descPanel + sonnetBanner + tatankaVisuals + cards;
 }
+
+function selectTatankaCandidate(baseNo) {
+  // Find this product in PARTS_DB and pre-populate as a guess
+  if (typeof PARTS_DB === 'undefined') return;
+  const dbMatch = PARTS_DB.find(p => p.no.replace(/-\d$/,'').replace(/[A-Z]$/,'') === baseNo ||
+                                      p.no.startsWith(baseNo));
+  if (!dbMatch) { showToast('Part not in catalogue — add manually', 'error'); return; }
+  const tatanka = getTatankaData(dbMatch.no);
+  selectedGuess = { name: dbMatch.name, sv: dbMatch.sv, no: dbMatch.no,
+                    group: dbMatch.g, confidence: 80, tatanka,
+                    reason: 'Selected from Tatanka visual match' };
+  showConfirmStep();
+}
+
+
 
 function selectGuess(index, el) {
   document.querySelectorAll('.guess-card').forEach(c => c.classList.remove('selected'));
@@ -1527,7 +1680,7 @@ function buildTatankaPanel(items, partNo) {
 async function retryAnalysis() {
   identifyAttempt++;
   showStep(1);
-  await analyzePhoto();
+  await analyzePhoto(false);
 }
 
 function backToGuesses() { showStep(2); }
@@ -2902,8 +3055,9 @@ async function analyzeSingleBulkItem(item, apiKey) {
     }
 
     // Full AI analysis
-    const prompt = `You are an expert on Volvo C3 military vehicles. Identify this spare part.
-Return ONLY a JSON array of 1 best guess: [{"name":"English name","sv":"Swedish name","no":"part number","group":"group number","confidence":85,"reason":"one sentence"}]`;
+    const prompt = `You are an expert on Volvo C3 military vehicles (C303, C304, C306, TGB 11/13/20).
+First read any text or part numbers visible in the image, then identify the part.
+Return ONLY a JSON array of 1 best guess: [{"name":"English name","sv":"Swedish name","no":"part number","group":"group number","confidence":85,"reason":"one sentence, mention any part numbers read from image"}]`;
 
     const resp = await fetch(ANTHROPIC_API, {
       method: 'POST',
