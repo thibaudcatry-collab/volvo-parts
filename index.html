@@ -808,6 +808,19 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
       </div>
     </div>
     <div class="card">
+      <div class="card-title"><span class="ct-icon">🔑</span> API KEY</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Anthropic API Key</div>
+          <div class="settings-sublabel" id="apiKeyStatus">Not set</div>
+        </div>
+        <div class="settings-control" style="display:flex;gap:6px">
+          <button class="btn btn-secondary btn-sm" onclick="promptApiKey('none')">Change</button>
+          <button class="btn btn-danger btn-sm" onclick="clearApiKey()">Clear</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
       <div class="card-title"><span class="ct-icon">ℹ️</span> ABOUT</div>
       <div style="font-size:12px; color:var(--text2); line-height:1.8;">
         Volvo C3 Parts Inventory v1.0<br>
@@ -889,6 +902,20 @@ async function init() {
   renderCatalogue();
   renderSummary();
   updateSettingsUI();
+  updateApiKeyStatus();
+}
+
+function updateApiKeyStatus() {
+  const el = document.getElementById('apiKeyStatus');
+  if (!el) return;
+  const key = localStorage.getItem(API_KEY_STORAGE);
+  if (key) {
+    el.textContent = 'Set (' + key.substring(0,12) + '...)';
+    el.style.color = 'var(--green)';
+  } else {
+    el.textContent = 'Not set — tap Change to add';
+    el.style.color = 'var(--red)';
+  }
 }
 
 async function loadTatankaDB() {
@@ -1099,7 +1126,10 @@ async function compressImage(file, maxWidth, quality) {
 
 async function analyzePhoto() {
   const apiKey = getApiKey();
-  if (!apiKey) return;
+  if (!apiKey) {
+    promptApiKey('analyze');
+    return;
+  }
 
   document.getElementById('analyzeBtn').disabled = true;
   document.getElementById('analyzeSpinner').style.display = 'inline-block';
@@ -1168,8 +1198,10 @@ Rules:
       })
     });
 
+    if (!response.ok) throw new Error('API error ' + response.status + ': ' + await response.text());
     const data = await response.json();
     let text = (data.content || []).map(b => b.text || '').join('');
+    window._lastApiResponse = text; // for debug
     text = text.replace(/```json|```/g, '').trim();
 
     // Extract JSON array robustly — handle partial responses or extra text
@@ -1201,7 +1233,13 @@ Rules:
     renderGuesses(guesses);
 
   } catch(err) {
-    showToast('Analysis failed: ' + err.message, 'error');
+    console.error('Analysis error:', err);
+    let msg = err.message;
+    // Show first 80 chars of raw response to help debug
+    if (window._lastApiResponse) {
+      msg += ' | Response: ' + window._lastApiResponse.substring(0, 80);
+    }
+    showToast('Analysis failed: ' + msg, 'error');
     document.getElementById('analyzeBtn').disabled = false;
   }
 
@@ -1961,6 +1999,7 @@ async function fetchSourcePrice() {
       })
     });
 
+    if (!response.ok) throw new Error('API error ' + response.status + ': ' + await response.text());
     const data = await response.json();
     const text = (data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
     const m = text.match(/\{.*\}/s);
@@ -2183,12 +2222,50 @@ function printListedLabels() {
 // ═══════════════════════════════════════════════════════
 
 function getApiKey() {
-  let key = localStorage.getItem(API_KEY_STORAGE);
-  if (!key) {
-    key = prompt('Enter your Anthropic API key (stored locally, never sent anywhere else):');
-    if (key) localStorage.setItem(API_KEY_STORAGE, key.trim());
+  return localStorage.getItem(API_KEY_STORAGE) || null;
+}
+
+function promptApiKey(callback) {
+  const body = document.getElementById('modalBody');
+  body.innerHTML = `
+    <div class="modal-title">🔑 API KEY REQUIRED</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+      Enter your Anthropic API key to enable photo identification.<br>
+      It is stored only on this device and never shared.
+    </div>
+    <div class="fg">
+      <label>Anthropic API Key</label>
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+    </div>
+    <div style="margin-top:4px;margin-bottom:16px">
+      <a href="https://console.anthropic.com/keys" target="_blank" 
+         style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--blue)">
+        Get your key at console.anthropic.com →
+      </a>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveApiKey('${callback}')">SAVE & CONTINUE</button>
+    </div>`;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveApiKey(callback) {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val || !val.startsWith('sk-')) {
+    showToast('Invalid key — should start with sk-', 'error');
+    return;
   }
-  return key;
+  localStorage.setItem(API_KEY_STORAGE, val);
+  closeModal();
+  showToast('API key saved ✓', 'success');
+  updateApiKeyStatus();
+  if (callback === 'analyze') analyzePhoto();
+}
+
+function clearApiKey() {
+  localStorage.removeItem(API_KEY_STORAGE);
+  showToast('API key cleared', 'success');
 }
 
 // ═══════════════════════════════════════════════════════
