@@ -1117,7 +1117,7 @@ async function analyzePhoto() {
       filteredParts = PARTS_DB.filter(p => groups.includes(p.g));
     }
     // Take sample to avoid token limits
-    const sample = filteredParts.slice(0, 300);
+    const sample = filteredParts.slice(0, 80);
     partsContext = '\n\nKnown parts database (subset):\n' +
       sample.map(p => `${p.no}: ${p.name} (${p.sv})`).join('\n');
   }
@@ -1157,7 +1157,7 @@ Rules:
       },
       body: JSON.stringify({
         model: 'claude-opus-4-6',
-        max_tokens: 1000,
+        max_tokens: 2000,
         messages: [{
           role: 'user',
           content: [
@@ -1172,8 +1172,14 @@ Rules:
     let text = (data.content || []).map(b => b.text || '').join('');
     text = text.replace(/```json|```/g, '').trim();
 
-    let guesses = JSON.parse(text);
+    // Extract JSON array robustly — handle partial responses or extra text
+    const jsonMatch = text.match(/\[\s*\{[\s\S]*\}\s*\]/);
+    if (!jsonMatch) throw new Error('No JSON array found in response');
+    let guesses = JSON.parse(jsonMatch[0]);
     if (!Array.isArray(guesses)) throw new Error('Not array');
+    // Ensure we have at least 1 valid guess
+    guesses = guesses.filter(g => g && (g.name || g.no));
+    if (guesses.length === 0) throw new Error('No valid guesses in response');
 
     // Enrich guesses with PARTS_DB data
     guesses = guesses.map(g => {
@@ -2222,7 +2228,7 @@ window.addEventListener('load', () => {
 </script>
 
 <!-- PARTS_DB.js should be included here -->
-<script src="PARTS_DB.js"></script>
+<!-- <script src="PARTS_DB.js"></script> -->
 
 </body>
 </html>
