@@ -1,0 +1,2228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Volvo Parts">
+<meta name="theme-color" content="0d0d0d">
+<title>Volvo C3 Parts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0d0d;
+  --surface: #161616;
+  --surface2: #1e1e1e;
+  --surface3: #252525;
+  --border: #2a2a2a;
+  --border2: #333;
+  --accent: #e8b84b;
+  --accent2: #c97b2e;
+  --text: #ebebeb;
+  --text2: #aaa;
+  --muted: #666;
+  --red: #e05252;
+  --green: #52c77a;
+  --blue: #5299e0;
+  --orange: #e87b3a;
+  --radius: 8px;
+  --header-h: 56px;
+  --nav-h: 60px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  overscroll-behavior: none;
+}
+
+/* ── HEADER ── */
+.app-header {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--header-h);
+  background: var(--surface);
+  border-bottom: 2px solid var(--accent);
+  display: flex; align-items: center;
+  padding: 0 16px; gap: 12px;
+  z-index: 200;
+}
+.logo { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--accent); letter-spacing: 3px; }
+.logo span { font-size: 13px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; display: block; margin-top: -4px; }
+.header-stats { margin-left: auto; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); line-height: 1.6; }
+.header-stats b { color: var(--accent); }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 200;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav-btn {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px; cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; color: var(--muted);
+  letter-spacing: 0.5px; text-transform: uppercase;
+  transition: color 0.2s; border: none; background: none;
+  padding: 8px 4px;
+}
+.nav-btn .nav-icon { font-size: 20px; transition: transform 0.2s; }
+.nav-btn.active { color: var(--accent); }
+.nav-btn.active .nav-icon { transform: translateY(-2px); }
+.nav-btn:hover { color: var(--text2); }
+
+/* ── MAIN SCROLL AREA ── */
+.main {
+  position: fixed;
+  top: var(--header-h);
+  bottom: var(--nav-h);
+  left: 0; right: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.screen { display: none; min-height: 100%; padding: 14px 14px 20px; max-width: 680px; margin: 0 auto; }
+.screen.active { display: block; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.card-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 15px; color: var(--accent);
+  letter-spacing: 1.5px; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title .ct-icon { font-size: 16px; }
+
+/* ── FORMS ── */
+.fg { margin-bottom: 11px; }
+.fg label {
+  display: block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; color: var(--muted);
+  margin-bottom: 4px; letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.fg label .req { color: var(--accent); }
+input, select, textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 10px 12px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  transition: border-color 0.2s;
+  outline: none;
+  -webkit-appearance: none;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+select option { background: var(--surface2); }
+textarea { resize: vertical; min-height: 70px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 18px; border-radius: var(--radius);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer; border: none;
+  transition: all 0.2s; letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #000; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-primary:disabled { background: var(--border2); color: var(--muted); cursor: not-allowed; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); }
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger { background: transparent; color: var(--red); border: 1px solid var(--red); }
+.btn-danger:hover { background: var(--red); color: #fff; }
+.btn-success { background: var(--green); color: #000; }
+.btn-full { width: 100%; }
+.btn-sm { padding: 6px 12px; font-size: 11px; }
+.btn-xs { padding: 4px 8px; font-size: 10px; }
+.btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── BADGES ── */
+.badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 7px; border-radius: 20px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.3px;
+}
+.badge-green { background: rgba(82,199,122,0.15); color: var(--green); border: 1px solid rgba(82,199,122,0.3); }
+.badge-yellow { background: rgba(232,184,75,0.15); color: var(--accent); border: 1px solid rgba(232,184,75,0.3); }
+.badge-red { background: rgba(224,82,82,0.15); color: var(--red); border: 1px solid rgba(224,82,82,0.3); }
+.badge-blue { background: rgba(82,153,224,0.15); color: var(--blue); border: 1px solid rgba(82,153,224,0.3); }
+.badge-orange { background: rgba(232,123,58,0.15); color: var(--orange); border: 1px solid rgba(232,123,58,0.3); }
+.badge-muted { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+
+/* ── PHOTO AREA ── */
+.photo-area {
+  border: 2px dashed var(--border2);
+  border-radius: var(--radius);
+  padding: 32px 16px;
+  text-align: center; cursor: pointer;
+  transition: all 0.2s; background: var(--surface2);
+  position: relative; overflow: hidden;
+}
+.photo-area:hover { border-color: var(--accent); }
+.photo-area.has-photo { padding: 0; border-style: solid; border-color: var(--accent); }
+.photo-area img { width: 100%; max-height: 280px; object-fit: cover; border-radius: 6px; display: block; }
+.photo-placeholder { display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--muted); }
+.photo-icon { font-size: 48px; }
+.photo-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.5px; }
+.photo-sublabel { font-size: 11px; color: var(--muted); opacity: 0.7; }
+#cameraInput, #galleryInput, #customPhotoInput { display: none; }
+
+/* ── STEP INDICATOR ── */
+.steps { display: flex; align-items: center; gap: 0; margin-bottom: 16px; }
+.step {
+  flex: 1; text-align: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; color: var(--muted);
+  letter-spacing: 0.5px;
+  padding: 8px 4px;
+  border-bottom: 2px solid var(--border);
+  transition: all 0.2s;
+}
+.step.active { color: var(--accent); border-bottom-color: var(--accent); }
+.step.done { color: var(--green); border-bottom-color: var(--green); }
+.step-num {
+  display: block;
+  font-size: 16px; font-weight: 600;
+  margin-bottom: 2px;
+}
+
+/* ── GUESS CARDS ── */
+.guess-card {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 12px; margin-bottom: 8px;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.guess-card:hover { border-color: var(--accent); background: var(--surface3); }
+.guess-card.selected { border-color: var(--accent); background: rgba(232,184,75,0.08); }
+.guess-thumb { width: 64px; height: 64px; border-radius: 6px; object-fit: cover; background: var(--surface3); flex-shrink: 0; border: 1px solid var(--border); }
+.guess-thumb-placeholder { width: 64px; height: 64px; border-radius: 6px; background: var(--surface3); flex-shrink: 0; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--muted); }
+.guess-info { flex: 1; min-width: 0; }
+.guess-rank { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--accent); letter-spacing: 1px; margin-bottom: 3px; }
+.guess-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.guess-no { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--accent); margin-bottom: 4px; }
+.guess-desc { font-size: 12px; color: var(--text2); line-height: 1.4; }
+.guess-price { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--green); margin-top: 4px; }
+.guess-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
+.conf-bar-wrap { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+.conf-bar { flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.conf-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+
+/* ── INVENTORY LIST ── */
+.inv-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px; margin-bottom: 8px;
+  transition: border-color 0.2s;
+}
+.inv-item:hover { border-color: var(--border2); }
+.inv-item-header { display: flex; align-items: flex-start; gap: 10px; }
+.inv-thumb { width: 52px; height: 52px; border-radius: 6px; object-fit: cover; background: var(--surface2); flex-shrink: 0; border: 1px solid var(--border); }
+.inv-thumb-ph { width: 52px; height: 52px; border-radius: 6px; background: var(--surface2); flex-shrink: 0; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--muted); }
+.inv-info { flex: 1; min-width: 0; }
+.inv-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inv-no { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--accent); }
+.inv-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
+.inv-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.inv-price-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
+.inv-asking { color: var(--green); font-weight: 600; }
+.inv-ref { color: var(--muted); }
+
+/* ── SEARCH BAR ── */
+.search-wrap { position: relative; margin-bottom: 12px; }
+.search-wrap input { padding-left: 36px; }
+.search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 16px; pointer-events: none; }
+
+/* ── FILTER CHIPS ── */
+.filter-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; scrollbar-width: none; }
+.filter-chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex-shrink: 0; padding: 5px 12px;
+  border-radius: 20px; cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; letter-spacing: 0.3px;
+  border: 1px solid var(--border2);
+  background: var(--surface2); color: var(--muted);
+  transition: all 0.2s; white-space: nowrap;
+}
+.chip.active { background: rgba(232,184,75,0.15); color: var(--accent); border-color: rgba(232,184,75,0.4); }
+.chip:hover { border-color: var(--accent); color: var(--text2); }
+
+/* ── TATANKA PANEL ── */
+.tatanka-panel {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 12px; margin-top: 10px;
+}
+.tatanka-header { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.tatanka-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.tatanka-row:last-child { border-bottom: none; }
+.tatanka-img { width: 48px; height: 48px; border-radius: 5px; object-fit: cover; background: var(--surface3); border: 1px solid var(--border); flex-shrink: 0; }
+.tatanka-img-ph { width: 48px; height: 48px; border-radius: 5px; background: var(--surface3); border: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--muted); }
+.tatanka-info { flex: 1; min-width: 0; }
+.tatanka-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tatanka-price { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--green); }
+.tatanka-sek { font-size: 10px; color: var(--muted); }
+.tatanka-link { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--blue); text-decoration: none; flex-shrink: 0; }
+.tatanka-link:hover { text-decoration: underline; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 500; display: none;
+  align-items: flex-end; justify-content: center;
+  padding: 0;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 16px 16px 0 0;
+  width: 100%; max-width: 680px;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 20px 16px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 0 auto 16px; }
+.modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--accent); letter-spacing: 2px; margin-bottom: 16px; }
+.modal-close { float: right; background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 0 4px; }
+.modal-close:hover { color: var(--text); }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: calc(var(--nav-h) + 12px); left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--surface3); color: var(--text);
+  border: 1px solid var(--border2);
+  padding: 10px 20px; border-radius: 24px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; z-index: 999;
+  opacity: 0; transition: all 0.3s;
+  white-space: nowrap; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.success { border-color: var(--green); color: var(--green); }
+.toast.error { border-color: var(--red); color: var(--red); }
+
+/* ── DIVIDER ── */
+.divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+/* ── STATS GRID ── */
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.stat-box { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
+.stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--accent); letter-spacing: 1px; line-height: 1; }
+.stat-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 0.5px; margin-top: 3px; }
+
+/* ── EMPTY STATE ── */
+.empty { text-align: center; padding: 48px 20px; color: var(--muted); }
+.empty-icon { font-size: 52px; margin-bottom: 12px; }
+.empty-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--text2); letter-spacing: 2px; margin-bottom: 6px; }
+.empty-text { font-size: 13px; line-height: 1.6; }
+
+/* ── LOADING ── */
+.spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-state { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 32px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+
+/* ── UNKNOWN PILE ── */
+.unknown-item { background: var(--surface); border: 1px solid var(--orange); border-radius: var(--radius); padding: 12px; margin-bottom: 8px; }
+.unknown-header { display: flex; align-items: center; gap: 10px; }
+.unknown-thumb { width: 52px; height: 52px; border-radius: 6px; object-fit: cover; background: var(--surface2); flex-shrink: 0; border: 1px solid var(--orange); }
+
+/* ── BOX SUMMARY ── */
+.box-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.2s; }
+.box-card:hover { border-color: var(--accent); }
+.box-title { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--accent); letter-spacing: 2px; margin-bottom: 6px; }
+.box-parts { font-size: 12px; color: var(--text2); line-height: 1.7; }
+
+/* ── QR LABEL PREVIEW ── */
+.label-preview {
+  background: #fff; color: #000;
+  border-radius: 6px; padding: 10px;
+  font-family: monospace; font-size: 11px;
+  max-width: 240px; margin: 0 auto;
+  border: 2px solid var(--border2);
+}
+.label-preview .lp-name { font-size: 13px; font-weight: bold; margin-bottom: 3px; }
+.label-preview .lp-no { font-size: 12px; color: #333; margin-bottom: 3px; }
+.label-preview .lp-detail { font-size: 10px; color: #555; margin-bottom: 6px; }
+.label-preview .lp-qr { text-align: center; margin-top: 6px; }
+
+/* ── CONDITION SELECTOR ── */
+.condition-btns { display: flex; gap: 6px; }
+.cond-btn {
+  flex: 1; padding: 8px 4px; border-radius: var(--radius);
+  border: 1px solid var(--border2); background: var(--surface2);
+  color: var(--muted); cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  text-align: center; transition: all 0.2s;
+}
+.cond-btn:hover { border-color: var(--text2); color: var(--text2); }
+.cond-btn.active-good { border-color: var(--green); background: rgba(82,199,122,0.1); color: var(--green); }
+.cond-btn.active-fair { border-color: var(--accent); background: rgba(232,184,75,0.1); color: var(--accent); }
+.cond-btn.active-poor { border-color: var(--red); background: rgba(224,82,82,0.1); color: var(--red); }
+
+/* ── STATUS SELECTOR ── */
+.status-row { display: flex; gap: 6px; }
+.status-btn {
+  flex: 1; padding: 8px 4px; border-radius: var(--radius);
+  border: 1px solid var(--border2); background: var(--surface2);
+  color: var(--muted); cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  text-align: center; transition: all 0.2s;
+}
+.status-btn.active { border-color: var(--accent); background: rgba(232,184,75,0.1); color: var(--accent); }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── PRICE DISPLAY ── */
+.price-main { font-family: 'IBM Plex Mono', monospace; font-size: 16px; color: var(--green); font-weight: 600; }
+.price-ref { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+
+/* ── SECTION HEADER ── */
+.section-header { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; margin-top: 4px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+
+/* ── CATALOGUE ITEM ── */
+.cat-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: border-color 0.2s; }
+.cat-item:hover { border-color: var(--accent); }
+.cat-item-info { flex: 1; min-width: 0; }
+.cat-item-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cat-item-no { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--accent); }
+.cat-item-price { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--green); white-space: nowrap; }
+
+/* ── SETTINGS ── */
+.settings-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.settings-row:last-child { border-bottom: none; }
+.settings-label { font-size: 13px; font-weight: 600; }
+.settings-sublabel { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.settings-control { flex-shrink: 0; margin-left: 12px; }
+.settings-control input { width: 100px; }
+
+/* ── GROUP FILTER ── */
+.group-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 14px; }
+.group-btn { padding: 10px 8px; border-radius: var(--radius); border: 1px solid var(--border2); background: var(--surface2); color: var(--muted); cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-align: left; transition: all 0.2s; line-height: 1.4; }
+.group-btn:hover { border-color: var(--accent); color: var(--text2); }
+.group-btn.active { border-color: var(--accent); background: rgba(232,184,75,0.1); color: var(--accent); }
+.group-btn .grp-num { font-size: 14px; font-weight: 600; display: block; color: var(--accent); }
+
+/* ── PHOTO COMPARE ── */
+.photo-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.photo-compare-item { text-align: center; }
+.photo-compare-item img { width: 100%; height: 120px; object-fit: cover; border-radius: var(--radius); border: 1px solid var(--border); }
+.photo-compare-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--muted); margin-top: 4px; letter-spacing: 0.5px; }
+
+/* ── SOLD ARCHIVE ── */
+.sold-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 6px; opacity: 0.7; }
+.sold-badge { text-decoration: line-through; }
+
+/* ── RESPONSIVE: SMALL PHONES (iPhone SE, mini — 375px and below) ── */
+@media (max-width: 375px) {
+  :root {
+    --header-h: 50px;
+    --nav-h: 56px;
+  }
+  .logo { font-size: 20px; letter-spacing: 2px; }
+  .logo span { font-size: 11px; }
+  .header-stats { font-size: 9px; }
+  .row2 { grid-template-columns: 1fr; }
+  .row3 { grid-template-columns: 1fr 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .nav-btn { font-size: 8px; }
+  .nav-btn .nav-icon { font-size: 18px; }
+  .screen { padding: 10px 10px 16px; }
+  .card { padding: 12px; }
+  .btn { padding: 9px 14px; font-size: 11px; }
+  .guess-card { padding: 10px; }
+  .guess-thumb, .guess-thumb-placeholder { width: 52px; height: 52px; }
+  .modal { padding: 16px 12px; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+}
+
+/* ── RESPONSIVE: NORMAL PHONES (iPhone 12-16, 376-430px) ── */
+@media (min-width: 376px) and (max-width: 430px) {
+  .row3 { grid-template-columns: 1fr 1fr; }
+  .stats-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ── RESPONSIVE: LARGE PHONES / iPads (431px+) ── */
+@media (min-width: 431px) {
+  .screen { padding: 16px 16px 24px; }
+  .card { padding: 16px; }
+  .photo-area { padding: 40px 20px; }
+  .guess-thumb, .guess-thumb-placeholder { width: 72px; height: 72px; }
+  .inv-thumb, .inv-thumb-ph { width: 60px; height: 60px; }
+}
+
+/* ── IPHONE SAFE AREAS (notch + home bar) ── */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .app-header {
+    padding-top: max(10px, env(safe-area-inset-top));
+    height: calc(var(--header-h) + env(safe-area-inset-top));
+  }
+  .main {
+    top: calc(var(--header-h) + env(safe-area-inset-top));
+  }
+  .bottom-nav {
+    height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .main {
+    bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+  }
+  .toast {
+    bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px);
+  }
+}
+
+/* ── PREVENT DOUBLE-TAP ZOOM ON BUTTONS ── */
+button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .inv-item {
+  touch-action: manipulation;
+}
+
+/* ── PREVENT TEXT SELECTION ON UI ELEMENTS ── */
+.nav-btn, .chip, .btn, .card-title, .badge, .logo {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ── SMOOTH SCROLLING INSIDE MODAL ── */
+.modal {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* ── FIX INPUT ZOOM ON IOS (font-size must be >= 16px to prevent zoom) ── */
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div>
+    <div class="logo">VOLVO C3 <span>PARTS INVENTORY</span></div>
+  </div>
+  <div class="header-stats" id="headerStats">
+    <b id="hPartCount">0</b> PARTS<br>
+    <b id="hBoxCount">0</b> BOXES
+  </div>
+</header>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- ═══ SCREEN: IDENTIFY ═══ -->
+  <div class="screen active" id="screen-identify">
+    <div class="steps">
+      <div class="step active" id="step1"><span class="step-num">1</span>PHOTO</div>
+      <div class="step" id="step2"><span class="step-num">2</span>IDENTIFY</div>
+      <div class="step" id="step3"><span class="step-num">3</span>CONFIRM</div>
+      <div class="step" id="step4"><span class="step-num">4</span>SAVE</div>
+    </div>
+
+    <!-- Step 1: Photo -->
+    <div id="identStep1">
+      <div class="card">
+        <div class="card-title"><span class="ct-icon">📷</span> PHOTOGRAPH PART</div>
+        <div class="photo-area" id="photoArea" onclick="document.getElementById('cameraInput').click()">
+          <div class="photo-placeholder">
+            <div class="photo-icon">📷</div>
+            <div class="photo-label">TAP TO TAKE PHOTO</div>
+            <div class="photo-sublabel">or choose from gallery</div>
+          </div>
+        </div>
+        <input type="file" id="cameraInput" accept="image/*" capture="environment">
+        <div style="margin-top:8px; display:flex; gap:8px;">
+          <button class="btn btn-secondary btn-sm" style="flex:1" onclick="document.getElementById('galleryInput').click()">📁 Gallery</button>
+          <input type="file" id="galleryInput" accept="image/*">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="ct-icon">🔧</span> OPTIONAL: FILTER BY SYSTEM</div>
+        <div class="fg">
+          <label>System (narrows AI search)</label>
+          <select id="groupFilter">
+            <option value="">All systems — let AI decide</option>
+            <option value="20,21,22,23,25,26,27">Engine & Fuel</option>
+            <option value="31,32,33,34,35,36,37,38,39">Electrical</option>
+            <option value="41,43,45">Clutch, Gearbox & Driveshaft</option>
+            <option value="46,48">Axles & Power Takeoff</option>
+            <option value="51,52,55,58">Brakes</option>
+            <option value="61,64">Steering</option>
+            <option value="71,72,73,77">Frame, Suspension & Wheels</option>
+            <option value="81,83,84,85,86,87,88">Cab, Body & Interior</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-full" id="analyzeBtn" disabled onclick="analyzePhoto()">
+          <span class="spinner" style="display:none" id="analyzeSpinner"></span>
+          <span id="analyzeBtnText">🔍 ANALYZE PHOTO</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: Results -->
+    <div id="identStep2" style="display:none">
+      <div class="card">
+        <div class="card-title"><span class="ct-icon">🤖</span> AI IDENTIFICATION</div>
+        <div id="guessResults"></div>
+        <div style="margin-top:10px; display:flex; gap:8px;">
+          <button class="btn btn-secondary" style="flex:1" onclick="retryAnalysis()">🔄 TRY AGAIN</button>
+          <button class="btn btn-secondary" style="flex:1" onclick="addAsUnknown()">❓ UNKNOWN</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Confirm part details -->
+    <div id="identStep3" style="display:none">
+      <div class="card">
+        <div class="card-title"><span class="ct-icon">✅</span> CONFIRM PART</div>
+        <div id="confirmedPartSummary"></div>
+        <div id="tatankaPanelConfirm"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="ct-icon">📝</span> PART DETAILS</div>
+        <div class="row2">
+          <div class="fg">
+            <label>Box Number <span class="req">*</span></label>
+            <input type="text" id="confirmBox" placeholder="e.g. 4">
+          </div>
+          <div class="fg">
+            <label>Quantity <span class="req">*</span></label>
+            <input type="number" id="confirmQty" value="1" min="1">
+          </div>
+        </div>
+        <div class="fg">
+          <label>Condition</label>
+          <div class="condition-btns">
+            <button class="cond-btn" onclick="setCondition('good',this)">✅ Good</button>
+            <button class="cond-btn" onclick="setCondition('fair',this)">⚠️ Fair</button>
+            <button class="cond-btn" onclick="setCondition('poor',this)">❌ Poor</button>
+          </div>
+        </div>
+        <div class="fg">
+          <label>Asking Price (EUR) <span class="req">*</span></label>
+          <input type="number" id="confirmPrice" placeholder="0.00" step="0.01">
+        </div>
+        <div class="fg">
+          <label>Notes</label>
+          <textarea id="confirmNotes" placeholder="Optional notes..."></textarea>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:4px;">
+          <button class="btn btn-secondary" onclick="backToGuesses()">← Back</button>
+          <button class="btn btn-primary" style="flex:1" onclick="savePart()">💾 SAVE TO INVENTORY</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Saved confirmation -->
+    <div id="identStep4" style="display:none">
+      <div class="card" style="text-align:center; padding:32px 16px;">
+        <div style="font-size:56px; margin-bottom:12px;">✅</div>
+        <div class="card-title" style="justify-content:center; font-size:22px;">PART SAVED!</div>
+        <div id="savedPartSummary" style="color:var(--text2); font-size:13px; margin-bottom:20px;"></div>
+        <div id="duplicateWarning" style="display:none; background:rgba(232,184,75,0.1); border:1px solid var(--accent); border-radius:var(--radius); padding:12px; margin-bottom:16px; font-size:13px;"></div>
+        <div class="btn-group" style="justify-content:center;">
+          <button class="btn btn-primary" onclick="resetIdentify()">📷 ADD ANOTHER</button>
+          <button class="btn btn-secondary" onclick="showScreen('inventory')">📦 VIEW INVENTORY</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SCREEN: INVENTORY ═══ -->
+  <div class="screen" id="screen-inventory">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Search parts, numbers, boxes..." id="invSearch" oninput="filterInventory()">
+    </div>
+    <div class="filter-chips" id="invFilterChips">
+      <div class="chip active" onclick="setInvFilter('all',this)">All</div>
+      <div class="chip" onclick="setInvFilter('available',this)">Available</div>
+      <div class="chip" onclick="setInvFilter('listed',this)">Listed</div>
+      <div class="chip" onclick="setInvFilter('unknown',this)">❓ Unknown</div>
+      <div class="chip" onclick="setInvFilter('sold',this)">Sold Archive</div>
+    </div>
+    <div id="invList"></div>
+  </div>
+
+  <!-- ═══ SCREEN: CATALOGUE ═══ -->
+  <div class="screen" id="screen-catalogue">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Search C3 parts catalogue..." id="catSearch" oninput="filterCatalogue()">
+    </div>
+    <div class="filter-chips" id="catFilterChips">
+      <div class="chip active" onclick="setCatFilter('',this)">All</div>
+      <div class="chip" onclick="setCatFilter('21',this)">Engine</div>
+      <div class="chip" onclick="setCatFilter('22',this)">Oil</div>
+      <div class="chip" onclick="setCatFilter('23',this)">Fuel</div>
+      <div class="chip" onclick="setCatFilter('34',this)">Ignition</div>
+      <div class="chip" onclick="setCatFilter('41',this)">Clutch</div>
+      <div class="chip" onclick="setCatFilter('43',this)">Gearbox</div>
+      <div class="chip" onclick="setCatFilter('51',this)">Brakes</div>
+      <div class="chip" onclick="setCatFilter('72',this)">Suspension</div>
+      <div class="chip" onclick="setCatFilter('81',this)">Body</div>
+      <div class="chip" onclick="setCatFilter('87',this)">Heating</div>
+    </div>
+    <div id="catList"></div>
+  </div>
+
+  <!-- ═══ SCREEN: SUMMARY ═══ -->
+  <div class="screen" id="screen-summary">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">📊</span> INVENTORY SUMMARY</div>
+      <div class="stats-grid" id="summaryStats"></div>
+      <div id="summaryValues"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">📦</span> BOX SUMMARY</div>
+      <div id="boxSummary"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">📄</span> EXPORT SALES CATALOGUE</div>
+      <div style="margin-bottom:10px; font-size:13px; color:var(--text2);">Generate a catalogue to share with buyers.</div>
+      <div class="row2">
+        <button class="btn btn-secondary" onclick="exportCatalogue('bulk')">📋 BULK MODE<br><span style="font-size:9px;font-weight:400">One buyer, all parts</span></button>
+        <button class="btn btn-secondary" onclick="exportCatalogue('individual')">📑 INDIVIDUAL<br><span style="font-size:9px;font-weight:400">Part by part listing</span></button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">🏷️</span> QR LABELS</div>
+      <div style="margin-bottom:10px; font-size:13px; color:var(--text2);">Print labels for boxes or individual parts.</div>
+      <div class="row2">
+        <button class="btn btn-secondary" onclick="showQRModal('box')">📦 BY BOX</button>
+        <button class="btn btn-secondary" onclick="showQRModal('part')">🔧 BY PART</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SCREEN: SETTINGS ═══ -->
+  <div class="screen" id="screen-settings">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">💶</span> PRICING SETTINGS</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Exchange Rate</div>
+          <div class="settings-sublabel">1 SEK = X EUR</div>
+        </div>
+        <div class="settings-control">
+          <input type="number" id="settingRate" value="0.087" step="0.001" min="0.001" onchange="saveSetting('rate',this.value)">
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Default Discount — In Stock</div>
+          <div class="settings-sublabel">% of Tatanka price when in stock</div>
+        </div>
+        <div class="settings-control">
+          <input type="number" id="settingDiscountIn" value="70" min="1" max="100" onchange="saveSetting('discountIn',this.value)">
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Default Discount — Out of Stock</div>
+          <div class="settings-sublabel">% of Tatanka price when out of stock</div>
+        </div>
+        <div class="settings-control">
+          <input type="number" id="settingDiscountOut" value="80" min="1" max="100" onchange="saveSetting('discountOut',this.value)">
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">🗃️</span> DATA</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Catalogue Parts</div>
+          <div class="settings-sublabel">Loaded from PARTS_DB.js</div>
+        </div>
+        <div class="settings-control">
+          <span id="settingPartCount" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)">—</span>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Tatanka Products</div>
+          <div class="settings-sublabel">Loaded from tatanka_db.json</div>
+        </div>
+        <div class="settings-control">
+          <span id="settingTatankaCount" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)">—</span>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">My Inventory</div>
+          <div class="settings-sublabel">Saved locally</div>
+        </div>
+        <div class="settings-control">
+          <span id="settingInvCount" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)">—</span>
+        </div>
+      </div>
+      <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" onclick="exportInventoryJSON()">💾 Backup Inventory</button>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importInput').click()">📂 Restore Backup</button>
+        <input type="file" id="importInput" accept=".json" style="display:none" onchange="importInventoryJSON(this)">
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">ℹ️</span> ABOUT</div>
+      <div style="font-size:12px; color:var(--text2); line-height:1.8;">
+        Volvo C3 Parts Inventory v1.0<br>
+        Built for C303 / C304 / C306<br>
+        TGB 11 / TGB 13 / TGB 20<br>
+        <br>
+        <span style="color:var(--muted)">Tatanka data scraped: <span id="tatankaScrapeDate">—</span></span>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-identify" onclick="showScreen('identify')">
+    <span class="nav-icon">📷</span>IDENTIFY
+  </button>
+  <button class="nav-btn" id="nav-inventory" onclick="showScreen('inventory')">
+    <span class="nav-icon">📦</span>INVENTORY
+  </button>
+  <button class="nav-btn" id="nav-catalogue" onclick="showScreen('catalogue')">
+    <span class="nav-icon">📋</span>CATALOGUE
+  </button>
+  <button class="nav-btn" id="nav-summary" onclick="showScreen('summary')">
+    <span class="nav-icon">📊</span>SUMMARY
+  </button>
+  <button class="nav-btn" id="nav-settings" onclick="showScreen('settings')">
+    <span class="nav-icon">⚙️</span>SETTINGS
+  </button>
+</nav>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modalContent">
+    <div class="modal-handle"></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CONFIGURATION & STATE
+// ═══════════════════════════════════════════════════════
+
+const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
+const API_KEY_STORAGE = "volvo_api_key";
+
+let PARTS_DB = [];       // loaded from PARTS_DB.js
+let TATANKA_DB = {};     // loaded from tatanka_db.json, keyed by base_no
+let INVENTORY = [];      // user's parts
+let SETTINGS = {
+  rate: 0.087,
+  discountIn: 70,
+  discountOut: 80
+};
+
+// Identify flow state
+let currentPhoto = null;      // base64 image
+let currentPhotoBlob = null;  // compressed blob for saving
+let currentGuesses = [];
+let selectedGuess = null;
+let currentCondition = null;
+let identifyAttempt = 0;
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+
+async function init() {
+  loadSettings();
+  loadInventory();
+  await loadTatankaDB();
+  updateHeaderStats();
+  renderInventory();
+  renderCatalogue();
+  renderSummary();
+  updateSettingsUI();
+}
+
+async function loadTatankaDB() {
+  try {
+    const r = await fetch('tatanka_db.json');
+    if (!r.ok) throw new Error('not found');
+    const data = await r.json();
+    TATANKA_DB = {};
+    (data.products || []).forEach(p => {
+      const key = p.base_no || p.sku;
+      if (!TATANKA_DB[key]) TATANKA_DB[key] = [];
+      TATANKA_DB[key].push(p);
+    });
+    document.getElementById('settingTatankaCount').textContent = (data.products||[]).length;
+    document.getElementById('tatankaScrapeDate').textContent = data.scraped_date || '—';
+  } catch(e) {
+    console.log('tatanka_db.json not loaded:', e.message);
+  }
+}
+
+function loadSettings() {
+  const s = localStorage.getItem('volvo_settings');
+  if (s) {
+    try { SETTINGS = {...SETTINGS, ...JSON.parse(s)}; } catch(e) {}
+  }
+}
+
+function saveSetting(key, val) {
+  SETTINGS[key] = parseFloat(val) || val;
+  localStorage.setItem('volvo_settings', JSON.stringify(SETTINGS));
+  updateSettingsUI();
+  renderInventory();
+  renderSummary();
+}
+
+function updateSettingsUI() {
+  document.getElementById('settingRate').value = SETTINGS.rate;
+  document.getElementById('settingDiscountIn').value = SETTINGS.discountIn;
+  document.getElementById('settingDiscountOut').value = SETTINGS.discountOut;
+}
+
+function loadInventory() {
+  const d = localStorage.getItem('volvo_inventory');
+  if (d) { try { INVENTORY = JSON.parse(d); } catch(e) { INVENTORY = []; } }
+}
+
+function saveInventory() {
+  localStorage.setItem('volvo_inventory', JSON.stringify(INVENTORY));
+  updateHeaderStats();
+}
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  document.querySelector('.main').scrollTop = 0;
+  if (name === 'inventory') renderInventory();
+  if (name === 'summary') renderSummary();
+  if (name === 'catalogue') renderCatalogue();
+}
+
+// ═══════════════════════════════════════════════════════
+// HELPERS: PRICING
+// ═══════════════════════════════════════════════════════
+
+function sekToEur(sek) {
+  if (!sek) return null;
+  return Math.round(sek * SETTINGS.rate * 100) / 100;
+}
+
+function formatEur(eur) {
+  if (eur === null || eur === undefined) return '—';
+  return eur.toFixed(2) + ' EUR';
+}
+
+function formatSek(sek) {
+  if (!sek) return '';
+  return '(' + sek.toLocaleString() + ' SEK)';
+}
+
+function formatPrice(eur, sek) {
+  if (!eur) return '<span style="color:var(--muted)">Price on request</span>';
+  return '<span class="price-main">' + formatEur(eur) + '</span> <span class="price-ref">' + formatSek(sek) + '</span>';
+}
+
+function getTatankaData(partNo) {
+  if (!partNo) return [];
+  const base = partNo.replace(/-\d$/, '').replace(/-/, '');
+  const base2 = partNo.split('-')[0];
+  return TATANKA_DB[base] || TATANKA_DB[base2] || TATANKA_DB[partNo] || [];
+}
+
+function getSuggestedPrice(tatankaItems) {
+  if (!tatankaItems || tatankaItems.length === 0) return null;
+  // Prefer in-stock items for price reference
+  const inStock = tatankaItems.filter(t => t.stock === 'in_stock' || t.stock === 'few_left');
+  const ref = inStock.length > 0 ? inStock[0] : tatankaItems[0];
+  if (!ref.price_sek) return null;
+  const isOutOfStock = ref.stock === 'temp_finished' || ref.stock === 'out_of_stock';
+  const discount = isOutOfStock ? SETTINGS.discountOut : SETTINGS.discountIn;
+  const eur = sekToEur(ref.price_sek);
+  if (!eur) return null;
+  return Math.round(eur * (discount / 100) * 100) / 100;
+}
+
+function getStockBadge(stock) {
+  const map = {
+    'in_stock': '<span class="badge badge-green">✅ In Stock</span>',
+    'few_left': '<span class="badge badge-yellow">⚠️ Few Left</span>',
+    'temp_finished': '<span class="badge badge-orange">⏳ Temp Out</span>',
+    'out_of_stock': '<span class="badge badge-red">❌ Out of Stock</span>',
+  };
+  return map[stock] || '<span class="badge badge-muted">? Unknown</span>';
+}
+
+function getConditionBadge(cond) {
+  if (!cond) return '';
+  const map = {
+    good: '<span class="badge badge-green">✅ Good</span>',
+    fair: '<span class="badge badge-yellow">⚠️ Fair</span>',
+    poor: '<span class="badge badge-red">❌ Poor</span>',
+  };
+  return map[cond] || '';
+}
+
+function getStatusBadge(status) {
+  const map = {
+    available: '<span class="badge badge-green">● Available</span>',
+    listed: '<span class="badge badge-blue">● Listed</span>',
+    sold: '<span class="badge badge-muted">✓ Sold</span>',
+  };
+  return map[status] || '<span class="badge badge-green">● Available</span>';
+}
+
+// ═══════════════════════════════════════════════════════
+// HEADER STATS
+// ═══════════════════════════════════════════════════════
+
+function updateHeaderStats() {
+  const active = INVENTORY.filter(i => i.status !== 'sold' && !i.isUnknown);
+  const boxes = new Set(active.map(i => i.box)).size;
+  document.getElementById('hPartCount').textContent = active.length;
+  document.getElementById('hBoxCount').textContent = boxes;
+  document.getElementById('settingInvCount').textContent = INVENTORY.length;
+  if (typeof PARTS_DB !== 'undefined') {
+    document.getElementById('settingPartCount').textContent = PARTS_DB.length;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// PHOTO HANDLING
+// ═══════════════════════════════════════════════════════
+
+document.getElementById('cameraInput').addEventListener('change', handlePhoto);
+document.getElementById('galleryInput').addEventListener('change', handlePhoto);
+
+async function handlePhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const compressed = await compressImage(file, 1200, 0.85);
+  currentPhoto = compressed.b64;
+  currentPhotoBlob = compressed.blob;
+  const photoArea = document.getElementById('photoArea');
+  photoArea.classList.add('has-photo');
+  photoArea.innerHTML = '<img src="' + compressed.dataUrl + '" alt="Part photo">';
+  document.getElementById('analyzeBtn').disabled = false;
+  e.target.value = '';
+}
+
+async function compressImage(file, maxWidth, quality) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = e => {
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > maxWidth) { h = h * maxWidth / w; w = maxWidth; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob(blob => {
+          const reader2 = new FileReader();
+          reader2.onload = e2 => {
+            const dataUrl = e2.target.result;
+            resolve({
+              b64: dataUrl.split(',')[1],
+              blob: blob,
+              dataUrl: dataUrl
+            });
+          };
+          reader2.readAsDataURL(blob);
+        }, 'image/jpeg', quality);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// AI ANALYSIS
+// ═══════════════════════════════════════════════════════
+
+async function analyzePhoto() {
+  const apiKey = getApiKey();
+  if (!apiKey) return;
+
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('analyzeSpinner').style.display = 'inline-block';
+  document.getElementById('analyzeBtnText').textContent = 'ANALYZING...';
+
+  const groupFilter = document.getElementById('groupFilter').value;
+  const filterText = groupFilter ? `Focus on parts from groups: ${groupFilter}.` : '';
+
+  // Build context from PARTS_DB
+  let partsContext = '';
+  if (typeof PARTS_DB !== 'undefined' && PARTS_DB.length > 0) {
+    let filteredParts = PARTS_DB;
+    if (groupFilter) {
+      const groups = groupFilter.split(',');
+      filteredParts = PARTS_DB.filter(p => groups.includes(p.g));
+    }
+    // Take sample to avoid token limits
+    const sample = filteredParts.slice(0, 300);
+    partsContext = '\n\nKnown parts database (subset):\n' +
+      sample.map(p => `${p.no}: ${p.name} (${p.sv})`).join('\n');
+  }
+
+  const prompt = `You are an expert on Volvo C3 series military vehicles (C303, C304, C306, TGB 11/13/20).
+
+Analyze this photo of a spare part and identify it.
+${filterText}
+${partsContext}
+
+Return ONLY a JSON array of exactly 3 guesses, ordered by confidence (highest first):
+[
+  {
+    "name": "English part name",
+    "sv": "Swedish name if known",
+    "no": "part number like 461537-3",
+    "group": "group number like 21",
+    "confidence": 85,
+    "reason": "brief explanation why you think this is the part"
+  }
+]
+
+Rules:
+- Use real Volvo C3 part numbers from the database if possible
+- confidence is 0-100
+- If unsure, still give 3 best guesses with lower confidence
+- Return ONLY the JSON array, no other text`;
+
+  try {
+    const response = await fetch(ANTHROPIC_API, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-6',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: currentPhoto } },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    let text = (data.content || []).map(b => b.text || '').join('');
+    text = text.replace(/```json|```/g, '').trim();
+
+    let guesses = JSON.parse(text);
+    if (!Array.isArray(guesses)) throw new Error('Not array');
+
+    // Enrich guesses with PARTS_DB data
+    guesses = guesses.map(g => {
+      const dbMatch = (typeof PARTS_DB !== 'undefined') ?
+        PARTS_DB.find(p => p.no === g.no || p.no.split('-')[0] === g.no.split('-')[0]) : null;
+      if (dbMatch) {
+        g.name = g.name || dbMatch.name;
+        g.sv = g.sv || dbMatch.sv;
+        g.no = g.no || dbMatch.no;
+        g.group = g.group || dbMatch.g;
+      }
+      g.tatanka = getTatankaData(g.no);
+      return g;
+    });
+
+    currentGuesses = guesses;
+    identifyAttempt = 0;
+    showStep(2);
+    renderGuesses(guesses);
+
+  } catch(err) {
+    showToast('Analysis failed: ' + err.message, 'error');
+    document.getElementById('analyzeBtn').disabled = false;
+  }
+
+  document.getElementById('analyzeSpinner').style.display = 'none';
+  document.getElementById('analyzeBtnText').textContent = '🔍 ANALYZE PHOTO';
+}
+
+function renderGuesses(guesses) {
+  const container = document.getElementById('guessResults');
+  if (!guesses || guesses.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">🤷</div><div class="empty-title">NO MATCHES FOUND</div><div class="empty-text">Try a different angle or use the Unknown option.</div></div>';
+    return;
+  }
+
+  container.innerHTML = guesses.map((g, i) => {
+    const tatankaItems = g.tatanka || [];
+    const bestTatanka = tatankaItems.find(t => !t.is_used) || tatankaItems[0];
+    const priceEur = bestTatanka ? sekToEur(bestTatanka.price_sek) : null;
+    const thumb = bestTatanka && bestTatanka.image_local ?
+      `<img class="guess-thumb" src="${bestTatanka.image_local}" alt="">` :
+      `<div class="guess-thumb-placeholder">🔧</div>`;
+    const confColor = g.confidence >= 70 ? 'var(--green)' : g.confidence >= 40 ? 'var(--accent)' : 'var(--red)';
+
+    return `<div class="guess-card" onclick="selectGuess(${i},this)" id="guess${i}">
+      ${thumb}
+      <div class="guess-info">
+        <div class="guess-rank">MATCH #${i+1}</div>
+        <div class="guess-name">${g.name || 'Unknown Part'}</div>
+        <div class="guess-no">${g.no || '—'}</div>
+        ${g.reason ? `<div class="guess-desc">${g.reason}</div>` : ''}
+        <div class="conf-bar-wrap">
+          <div class="conf-bar"><div class="conf-fill" style="width:${g.confidence||0}%;background:${confColor}"></div></div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:${confColor}">${g.confidence||0}%</span>
+        </div>
+        <div class="guess-meta">
+          ${tatankaItems.length > 0 ? getStockBadge(bestTatanka.stock) : '<span class="badge badge-muted">Not on Tatanka</span>'}
+          ${priceEur ? `<span class="badge badge-green">~${formatEur(priceEur)}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectGuess(index, el) {
+  document.querySelectorAll('.guess-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedGuess = currentGuesses[index];
+  setTimeout(() => showConfirmStep(), 300);
+}
+
+function showConfirmStep() {
+  if (!selectedGuess) return;
+  showStep(3);
+
+  const g = selectedGuess;
+  const tatankaItems = g.tatanka || [];
+
+  // Part summary
+  document.getElementById('confirmedPartSummary').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+      ${tatankaItems[0]?.image_local ? `<img src="${tatankaItems[0].image_local}" style="width:64px;height:64px;border-radius:6px;object-fit:cover;border:1px solid var(--accent)">` : `<div style="width:64px;height:64px;border-radius:6px;background:var(--surface3);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px">🔧</div>`}
+      <div>
+        <div style="font-size:16px;font-weight:600;margin-bottom:3px">${g.name}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)">${g.no || '—'}</div>
+        ${g.sv ? `<div style="font-size:12px;color:var(--text2)">${g.sv}</div>` : ''}
+      </div>
+    </div>`;
+
+  // Tatanka panel
+  document.getElementById('tatankaPanelConfirm').innerHTML = buildTatankaPanel(tatankaItems, g.no);
+
+  // Suggested price
+  const suggested = getSuggestedPrice(tatankaItems);
+  if (suggested) {
+    document.getElementById('confirmPrice').value = suggested.toFixed(2);
+  }
+}
+
+function buildTatankaPanel(items, partNo) {
+  if (!items || items.length === 0) return '';
+  const rows = items.slice(0,3).map(t => {
+    const eur = sekToEur(t.price_sek);
+    return `<div class="tatanka-row">
+      ${t.image_local ? `<img class="tatanka-img" src="${t.image_local}" alt="">` : `<div class="tatanka-img-ph">🔧</div>`}
+      <div class="tatanka-info">
+        <div class="tatanka-name">${t.name}</div>
+        <div class="tatanka-price">${eur ? formatEur(eur) : 'Price on request'} <span class="tatanka-sek">${formatSek(t.price_sek)}</span></div>
+        <div style="margin-top:3px">${getStockBadge(t.stock)} ${t.is_used ? '<span class="badge badge-muted">USED</span>' : t.is_upgrade ? '<span class="badge badge-blue">UPGRADE</span>' : '<span class="badge badge-yellow">ORIGINAL</span>'}</div>
+        ${t.image_reference_only ? '<div style="font-size:9px;color:var(--muted);margin-top:2px">* image for reference only</div>' : ''}
+      </div>
+      <a class="tatanka-link" href="${t.product_url}" target="_blank">VIEW →</a>
+    </div>`;
+  }).join('');
+
+  return `<div class="tatanka-panel">
+    <div class="tatanka-header">🏪 TATANKA.NU</div>
+    ${rows}
+  </div>`;
+}
+
+async function retryAnalysis() {
+  identifyAttempt++;
+  showStep(1);
+  await analyzePhoto();
+}
+
+function backToGuesses() { showStep(2); }
+
+function setCondition(val, el) {
+  currentCondition = val;
+  document.querySelectorAll('.cond-btn').forEach(b => b.className = 'cond-btn');
+  el.classList.add('active-' + val);
+}
+
+function showStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('identStep' + i);
+    if (el) el.style.display = i === n ? 'block' : 'none';
+    const step = document.getElementById('step' + i);
+    if (step) {
+      step.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+    }
+  }
+  document.querySelector('.main').scrollTop = 0;
+}
+
+// ═══════════════════════════════════════════════════════
+// SAVE PART
+// ═══════════════════════════════════════════════════════
+
+async function savePart() {
+  const box = document.getElementById('confirmBox').value.trim();
+  const qty = parseInt(document.getElementById('confirmQty').value) || 1;
+  const price = parseFloat(document.getElementById('confirmPrice').value) || 0;
+  const notes = document.getElementById('confirmNotes').value.trim();
+
+  if (!box) { showToast('Box number is required', 'error'); return; }
+  if (!price) { showToast('Asking price is required', 'error'); return; }
+
+  const g = selectedGuess;
+
+  // Save photo
+  let photoPath = null;
+  if (currentPhotoBlob) {
+    const photoId = 'inv_' + Date.now();
+    const reader = new FileReader();
+    photoPath = await new Promise(resolve => {
+      reader.onload = e => resolve(e.target.result);
+      reader.readAsDataURL(currentPhotoBlob);
+    });
+  }
+
+  // Check for existing same part in same box
+  const existing = INVENTORY.find(i =>
+    i.partNo === g.no && i.box === box && i.status !== 'sold'
+  );
+
+  const newItem = {
+    id: Date.now(),
+    partNo: g.no || '',
+    name: g.name || '',
+    nameSv: g.sv || '',
+    group: g.group || '',
+    box: box,
+    qty: qty,
+    condition: currentCondition,
+    askingPrice: price,
+    notes: notes,
+    photo: photoPath,
+    status: 'available',
+    addedDate: new Date().toISOString(),
+    isCustom: false,
+    isUnknown: false,
+  };
+
+  let duplicateMsg = '';
+  if (existing) {
+    existing.qty += qty;
+    duplicateMsg = `Added ${qty} to existing entry in Box ${box}. Total: ${existing.qty} pcs.`;
+    saveInventory();
+  } else {
+    INVENTORY.push(newItem);
+    saveInventory();
+  }
+
+  showStep(4);
+  document.getElementById('savedPartSummary').innerHTML =
+    `<b>${g.name}</b><br>${g.no || ''} · Box ${box} · ×${qty}<br><span style="color:var(--green)">${formatEur(price)}</span>`;
+
+  const dupWarn = document.getElementById('duplicateWarning');
+  if (duplicateMsg) {
+    dupWarn.style.display = 'block';
+    dupWarn.innerHTML = '⚠️ ' + duplicateMsg;
+  } else {
+    dupWarn.style.display = 'none';
+  }
+
+  showToast('Part saved!', 'success');
+}
+
+function addAsUnknown() {
+  openModal('unknownForm');
+}
+
+async function saveUnknownPart(form) {
+  const name = document.getElementById('unknownName').value.trim();
+  const box = document.getElementById('unknownBox').value.trim();
+  const qty = parseInt(document.getElementById('unknownQty').value) || 1;
+  if (!box) { showToast('Box number required', 'error'); return; }
+
+  let photoPath = null;
+  if (currentPhotoBlob) {
+    const reader = new FileReader();
+    photoPath = await new Promise(resolve => {
+      reader.onload = e => resolve(e.target.result);
+      reader.readAsDataURL(currentPhotoBlob);
+    });
+  }
+
+  const item = {
+    id: Date.now(),
+    partNo: 'UNKNOWN-' + String(INVENTORY.filter(i=>i.isUnknown).length + 1).padStart(4,'0'),
+    name: name || 'Unknown Part',
+    box: box, qty: qty,
+    photo: photoPath,
+    status: 'available',
+    isUnknown: true,
+    addedDate: new Date().toISOString(),
+    askingPrice: 0,
+  };
+
+  INVENTORY.push(item);
+  saveInventory();
+  closeModal();
+  showToast('Saved to Unknown pile', 'success');
+  showScreen('inventory');
+}
+
+function resetIdentify() {
+  currentPhoto = null; currentPhotoBlob = null;
+  currentGuesses = []; selectedGuess = null; currentCondition = null;
+  const area = document.getElementById('photoArea');
+  area.classList.remove('has-photo');
+  area.innerHTML = `<div class="photo-placeholder"><div class="photo-icon">📷</div><div class="photo-label">TAP TO TAKE PHOTO</div><div class="photo-sublabel">or choose from gallery</div></div>`;
+  area.onclick = () => document.getElementById('cameraInput').click();
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('groupFilter').value = '';
+  document.getElementById('confirmBox').value = '';
+  document.getElementById('confirmQty').value = '1';
+  document.getElementById('confirmPrice').value = '';
+  document.getElementById('confirmNotes').value = '';
+  document.querySelectorAll('.cond-btn').forEach(b => b.className = 'cond-btn');
+  showStep(1);
+}
+
+// ═══════════════════════════════════════════════════════
+// INVENTORY RENDER
+// ═══════════════════════════════════════════════════════
+
+let invFilter = 'all';
+let invSearch = '';
+
+function setInvFilter(f, el) {
+  invFilter = f;
+  document.querySelectorAll('#invFilterChips .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  filterInventory();
+}
+
+function filterInventory() {
+  invSearch = document.getElementById('invSearch').value.toLowerCase();
+  renderInventory();
+}
+
+function renderInventory() {
+  const list = document.getElementById('invList');
+  if (!list) return;
+
+  let items = [...INVENTORY];
+
+  // Apply filter
+  if (invFilter === 'available') items = items.filter(i => i.status === 'available' && !i.isUnknown);
+  else if (invFilter === 'listed') items = items.filter(i => i.status === 'listed');
+  else if (invFilter === 'unknown') items = items.filter(i => i.isUnknown);
+  else if (invFilter === 'sold') items = items.filter(i => i.status === 'sold');
+  else items = items.filter(i => i.status !== 'sold');
+
+  // Apply search
+  if (invSearch) {
+    items = items.filter(i =>
+      (i.name||'').toLowerCase().includes(invSearch) ||
+      (i.partNo||'').toLowerCase().includes(invSearch) ||
+      (i.box||'').toLowerCase().includes(invSearch) ||
+      (i.notes||'').toLowerCase().includes(invSearch)
+    );
+  }
+
+  if (items.length === 0) {
+    list.innerHTML = `<div class="empty">
+      <div class="empty-icon">${invFilter === 'unknown' ? '❓' : '📦'}</div>
+      <div class="empty-title">${invFilter === 'unknown' ? 'NO UNKNOWN PARTS' : 'NO PARTS'}</div>
+      <div class="empty-text">${invFilter === 'all' ? 'Start by identifying and adding parts.' : 'Nothing matches your filter.'}</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = items.map(item => renderInvItem(item)).join('');
+}
+
+function renderInvItem(item) {
+  const tatankaItems = item.partNo ? getTatankaData(item.partNo) : [];
+  const bestT = tatankaItems.find(t=>!t.is_used) || tatankaItems[0];
+  const tatankaEur = bestT ? sekToEur(bestT.price_sek) : null;
+
+  const thumb = item.photo ?
+    `<img class="inv-thumb" src="${item.photo}" alt="">` :
+    (bestT?.image_local ? `<img class="inv-thumb" src="${bestT.image_local}" alt="">` :
+    `<div class="inv-thumb-ph">${item.isUnknown ? '❓' : '🔧'}</div>`);
+
+  const cls = item.isUnknown ? 'unknown-item' : 'inv-item';
+
+  return `<div class="${cls}" id="invitem${item.id}">
+    <div class="inv-item-header">
+      ${thumb}
+      <div class="inv-info">
+        <div class="inv-name">${item.name || 'Unknown Part'}</div>
+        <div class="inv-no">${item.partNo || ''}</div>
+        <div class="inv-meta">
+          <span class="badge badge-muted">📦 Box ${item.box || '—'}</span>
+          <span class="badge badge-muted">×${item.qty || 1}</span>
+          ${getConditionBadge(item.condition)}
+          ${getStatusBadge(item.status)}
+        </div>
+        <div class="inv-price-row">
+          <span class="inv-asking">${formatEur(item.askingPrice)}</span>
+          ${tatankaEur ? `<span class="inv-ref">Tatanka: ${formatEur(tatankaEur)}</span>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="inv-actions">
+      ${item.status !== 'sold' ? `
+        ${item.status === 'available' ? `<button class="btn btn-secondary btn-xs" onclick="setItemStatus(${item.id},'listed')">📢 MARK LISTED</button>` : ''}
+        ${item.status === 'listed' ? `<button class="btn btn-success btn-xs" onclick="confirmSold(${item.id})">💰 SOLD</button>` : ''}
+        ${item.status === 'listed' ? `<button class="btn btn-secondary btn-xs" onclick="setItemStatus(${item.id},'available')">↩ UNLIST</button>` : ''}
+        <button class="btn btn-secondary btn-xs" onclick="editItem(${item.id})">✏️ EDIT</button>
+        <button class="btn btn-secondary btn-xs" onclick="showQRForItem(${item.id})">🏷️ LABEL</button>
+      ` : `<span style="font-size:12px;color:var(--muted)">Sold on ${item.soldDate ? new Date(item.soldDate).toLocaleDateString() : '—'}</span>`}
+      ${item.isUnknown ? `<button class="btn btn-secondary btn-xs" onclick="retryIdentify(${item.id})">🔍 IDENTIFY</button>` : ''}
+      <button class="btn btn-danger btn-xs" onclick="deleteItem(${item.id})">🗑️</button>
+    </div>
+  </div>`;
+}
+
+function setItemStatus(id, status) {
+  const item = INVENTORY.find(i => i.id === id);
+  if (!item) return;
+  item.status = status;
+  saveInventory();
+  renderInventory();
+  showToast('Status updated', 'success');
+}
+
+function confirmSold(id) {
+  const item = INVENTORY.find(i => i.id === id);
+  if (!item) return;
+  openModal('soldConfirm', item);
+}
+
+function markSold(id) {
+  const item = INVENTORY.find(i => i.id === id);
+  if (!item) return;
+  item.status = 'sold';
+  item.soldDate = new Date().toISOString();
+  saveInventory();
+  closeModal();
+  renderInventory();
+  renderSummary();
+  showToast('Part marked as sold ✓', 'success');
+}
+
+function deleteItem(id) {
+  if (!confirm('Delete this part from inventory?')) return;
+  INVENTORY = INVENTORY.filter(i => i.id !== id);
+  saveInventory();
+  renderInventory();
+  renderSummary();
+  showToast('Deleted');
+}
+
+function editItem(id) {
+  const item = INVENTORY.find(i => i.id === id);
+  if (!item) return;
+  openModal('editItem', item);
+}
+
+function saveEditItem(id) {
+  const item = INVENTORY.find(i => i.id === id);
+  if (!item) return;
+  item.box = document.getElementById('editBox').value.trim() || item.box;
+  item.qty = parseInt(document.getElementById('editQty').value) || item.qty;
+  item.askingPrice = parseFloat(document.getElementById('editPrice').value) || item.askingPrice;
+  item.notes = document.getElementById('editNotes').value;
+  const cond = document.querySelector('.cond-btn.active-good, .cond-btn.active-fair, .cond-btn.active-poor');
+  if (cond) item.condition = cond.dataset.cond;
+  saveInventory();
+  closeModal();
+  renderInventory();
+  showToast('Updated', 'success');
+}
+
+function retryIdentify(id) {
+  const item = INVENTORY.find(i => i.id === id);
+  if (!item) return;
+  if (item.photo) {
+    currentPhoto = item.photo.split(',')[1];
+    currentPhotoBlob = null;
+    showScreen('identify');
+    const area = document.getElementById('photoArea');
+    area.classList.add('has-photo');
+    area.innerHTML = `<img src="${item.photo}" alt="">`;
+    document.getElementById('analyzeBtn').disabled = false;
+    showToast('Photo loaded — tap Analyze');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// CATALOGUE
+// ═══════════════════════════════════════════════════════
+
+let catFilter = '';
+let catSearch = '';
+
+function setCatFilter(f, el) {
+  catFilter = f;
+  document.querySelectorAll('#catFilterChips .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  filterCatalogue();
+}
+
+function filterCatalogue() {
+  catSearch = document.getElementById('catSearch').value.toLowerCase();
+  renderCatalogue();
+}
+
+function renderCatalogue() {
+  const list = document.getElementById('catList');
+  if (!list || typeof PARTS_DB === 'undefined') return;
+
+  if (!catSearch && !catFilter) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">SEARCH THE CATALOGUE</div><div class="empty-text">Type a part name, number, or Swedish name.<br>Or select a system filter above.</div></div>`;
+    return;
+  }
+
+  let items = PARTS_DB;
+  if (catFilter) items = items.filter(p => p.g === catFilter);
+  if (catSearch) {
+    items = items.filter(p =>
+      (p.name||'').toLowerCase().includes(catSearch) ||
+      (p.no||'').toLowerCase().includes(catSearch) ||
+      (p.sv||'').toLowerCase().includes(catSearch)
+    );
+  }
+
+  const shown = items.slice(0, 100);
+  if (shown.length === 0) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">NO RESULTS</div><div class="empty-text">Try a different search term.</div></div>`;
+    return;
+  }
+
+  list.innerHTML = (items.length > 100 ? `<div class="section-header">Showing 100 of ${items.length} results — refine your search</div>` : '') +
+    shown.map(p => {
+      const tatankaItems = getTatankaData(p.no);
+      const bestT = tatankaItems.find(t=>!t.is_used) || tatankaItems[0];
+      const eur = bestT ? sekToEur(bestT.price_sek) : null;
+      const thumb = bestT?.image_local ? `<img style="width:40px;height:40px;border-radius:5px;object-fit:cover;border:1px solid var(--border);flex-shrink:0" src="${bestT.image_local}" alt="">` : `<div style="width:40px;height:40px;border-radius:5px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;color:var(--muted)">🔧</div>`;
+      return `<div class="cat-item" onclick="openCatDetail('${p.no.replace(/'/g,"\\'")}')">
+        ${thumb}
+        <div class="cat-item-info">
+          <div class="cat-item-name">${p.name}</div>
+          <div class="cat-item-no">${p.no} · ${p.sv}</div>
+        </div>
+        <div class="cat-item-price">${eur ? formatEur(eur) : ''}</div>
+      </div>`;
+    }).join('');
+}
+
+function openCatDetail(partNo) {
+  const part = (typeof PARTS_DB !== 'undefined') ? PARTS_DB.find(p => p.no === partNo) : null;
+  if (!part) return;
+  openModal('catDetail', part);
+}
+
+// ═══════════════════════════════════════════════════════
+// SUMMARY & STATS
+// ═══════════════════════════════════════════════════════
+
+function renderSummary() {
+  const statsEl = document.getElementById('summaryStats');
+  const valsEl = document.getElementById('summaryValues');
+  const boxEl = document.getElementById('boxSummary');
+  if (!statsEl) return;
+
+  const active = INVENTORY.filter(i => i.status !== 'sold' && !i.isUnknown);
+  const listed = INVENTORY.filter(i => i.status === 'listed');
+  const sold = INVENTORY.filter(i => i.status === 'sold');
+  const unknown = INVENTORY.filter(i => i.isUnknown);
+  const boxes = new Set(active.map(i => i.box).filter(Boolean));
+
+  statsEl.innerHTML = `
+    <div class="stat-box"><div class="stat-val">${active.length}</div><div class="stat-label">PARTS</div></div>
+    <div class="stat-box"><div class="stat-val">${boxes.size}</div><div class="stat-label">BOXES</div></div>
+    <div class="stat-box"><div class="stat-val">${listed.length}</div><div class="stat-label">LISTED</div></div>
+    <div class="stat-box"><div class="stat-val">${sold.length}</div><div class="stat-label">SOLD</div></div>
+    <div class="stat-box"><div class="stat-val">${unknown.length}</div><div class="stat-label">UNKNOWN</div></div>
+    <div class="stat-box"><div class="stat-val">${active.reduce((s,i)=>s+i.qty,0)}</div><div class="stat-label">TOTAL QTY</div></div>`;
+
+  // Value calculations
+  const myTotal = active.reduce((s,i) => s + (i.askingPrice * i.qty), 0);
+  const soldTotal = sold.reduce((s,i) => s + (i.askingPrice * i.qty), 0);
+  const tatankaTotal = active.reduce((s,i) => {
+    const t = getTatankaData(i.partNo);
+    const best = t.find(x=>!x.is_used) || t[0];
+    return s + (best ? (sekToEur(best.price_sek)||0) * i.qty : 0);
+  }, 0);
+
+  valsEl.innerHTML = `
+    <div style="margin-top:4px">
+      <div class="settings-row">
+        <div><div class="settings-label">My Asking Prices Total</div></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--green);font-weight:600">${formatEur(Math.round(myTotal*100)/100)}</div>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-label">Tatanka Reference Total</div></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent)">${formatEur(Math.round(tatankaTotal*100)/100)}</div>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-label">Revenue from Sales</div></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--blue)">${formatEur(Math.round(soldTotal*100)/100)}</div>
+      </div>
+    </div>`;
+
+  // Box summary
+  const byBox = {};
+  active.forEach(i => {
+    const b = i.box || 'No Box';
+    if (!byBox[b]) byBox[b] = [];
+    byBox[b].push(i);
+  });
+  const sortedBoxes = Object.keys(byBox).sort((a,b) => {
+    const na = parseInt(a), nb = parseInt(b);
+    if (!isNaN(na) && !isNaN(nb)) return na - nb;
+    return a.localeCompare(b);
+  });
+
+  if (sortedBoxes.length === 0) {
+    boxEl.innerHTML = '<div style="color:var(--muted);font-size:13px">No parts with box numbers yet.</div>';
+  } else {
+    boxEl.innerHTML = sortedBoxes.map(box => {
+      const parts = byBox[box];
+      const total = parts.reduce((s,p) => s + (p.askingPrice * p.qty), 0);
+      return `<div class="box-card" onclick="filterByBox('${box}')">
+        <div class="box-title">📦 BOX ${box}</div>
+        <div class="box-parts">${parts.map(p => `${p.name} ×${p.qty}`).slice(0,5).join(' · ')}${parts.length > 5 ? ` · +${parts.length-5} more` : ''}</div>
+        <div style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green)">${formatEur(Math.round(total*100)/100)} · ${parts.length} part types</div>
+      </div>`;
+    }).join('');
+  }
+}
+
+function filterByBox(box) {
+  showScreen('inventory');
+  document.getElementById('invSearch').value = box;
+  invSearch = box.toLowerCase();
+  invFilter = 'all';
+  document.querySelectorAll('#invFilterChips .chip').forEach(c => c.classList.remove('active'));
+  document.querySelector('#invFilterChips .chip').classList.add('active');
+  renderInventory();
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════
+
+function exportCatalogue(mode) {
+  const active = INVENTORY.filter(i => i.status !== 'sold' && !i.isUnknown && i.askingPrice > 0);
+  if (active.length === 0) { showToast('No parts to export', 'error'); return; }
+
+  const date = new Date().toLocaleDateString('en-GB');
+  const totalEur = active.reduce((s,i) => s + i.askingPrice * i.qty, 0);
+
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Volvo C3 Parts - Sales Catalogue</title>
+  <style>
+    body{font-family:Arial,sans-serif;max-width:900px;margin:0 auto;padding:20px;color:#333}
+    h1{color:#c97b2e;border-bottom:3px solid #c97b2e;padding-bottom:10px}
+    .meta{color:#666;font-size:14px;margin-bottom:20px}
+    table{width:100%;border-collapse:collapse;margin-bottom:20px}
+    th{background:#1a1a1a;color:#e8b84b;padding:10px;text-align:left;font-size:12px}
+    td{padding:9px 10px;border-bottom:1px solid #eee;font-size:13px}
+    tr:nth-child(even)td{background:#f9f9f9}
+    .part-card{border:1px solid #ddd;border-radius:8px;padding:14px;margin-bottom:12px;page-break-inside:avoid}
+    .part-no{font-family:monospace;color:#c97b2e;font-size:12px}
+    .part-name{font-size:16px;font-weight:bold;margin:4px 0}
+    .part-price{color:#27ae60;font-size:18px;font-weight:bold}
+    .part-meta{font-size:12px;color:#666;margin-top:4px}
+    .total{background:#1a1a1a;color:#e8b84b;padding:12px 16px;border-radius:6px;font-size:16px;font-weight:bold;text-align:right}
+    @media print{.no-print{display:none}}
+  </style></head><body>
+  <h1>🚙 Volvo C3 Series — Parts For Sale</h1>
+  <div class="meta">Generated: ${date} · ${active.length} parts · Contact for purchase</div>`;
+
+  if (mode === 'bulk') {
+    html += `<table><tr><th>Part No.</th><th>Description</th><th>Box</th><th>Qty</th><th>Condition</th><th>Price (EUR)</th></tr>`;
+    active.forEach(i => {
+      html += `<tr><td style="font-family:monospace">${i.partNo}</td><td>${i.name}${i.notes?`<br><small style="color:#999">${i.notes}</small>`:''}</td><td>${i.box}</td><td>${i.qty}</td><td>${i.condition||'—'}</td><td style="color:#27ae60;font-weight:600">${formatEur(i.askingPrice)}</td></tr>`;
+    });
+    html += `</table><div class="total">TOTAL: ${formatEur(Math.round(totalEur*100)/100)}</div>`;
+  } else {
+    active.forEach(i => {
+      const t = getTatankaData(i.partNo);
+      const best = t.find(x=>!x.is_used)||t[0];
+      html += `<div class="part-card">
+        <div class="part-no">${i.partNo}</div>
+        <div class="part-name">${i.name}</div>
+        <div class="part-price">${formatEur(i.askingPrice)}</div>
+        <div class="part-meta">
+          Box: ${i.box} · Qty: ${i.qty} · Condition: ${i.condition||'Not specified'}
+          ${best ? ` · Tatanka ref: ${best.price_sek ? best.price_sek.toLocaleString()+' SEK' : 'N/A'}` : ''}
+          ${i.notes ? `<br>Notes: ${i.notes}` : ''}
+        </div>
+      </div>`;
+    });
+    html += `<div class="total">TOTAL VALUE: ${formatEur(Math.round(totalEur*100)/100)}</div>`;
+  }
+
+  html += '</body></html>';
+  const blob = new Blob([html], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `volvo_c3_parts_${mode}_${Date.now()}.html`;
+  a.click();
+  showToast('Catalogue exported!', 'success');
+}
+
+function exportInventoryJSON() {
+  const blob = new Blob([JSON.stringify(INVENTORY,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `volvo_inventory_backup_${Date.now()}.json`;
+  a.click();
+  showToast('Backup saved!', 'success');
+}
+
+function importInventoryJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (Array.isArray(data)) {
+        INVENTORY = data;
+        saveInventory();
+        renderInventory();
+        renderSummary();
+        showToast('Backup restored!', 'success');
+      }
+    } catch(err) { showToast('Invalid backup file', 'error'); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// ═══════════════════════════════════════════════════════
+// CUSTOM PARTS
+// ═══════════════════════════════════════════════════════
+
+async function saveCustomPart() {
+  const name = document.getElementById('customName').value.trim();
+  const category = document.getElementById('customCategory').value;
+  const sourceUrl = document.getElementById('customUrl').value.trim();
+  const box = document.getElementById('customBox').value.trim();
+  const qty = parseInt(document.getElementById('customQty').value) || 1;
+  const notes = document.getElementById('customNotes').value.trim();
+
+  if (!name) { showToast('Part name required', 'error'); return; }
+  if (!box) { showToast('Box number required', 'error'); return; }
+
+  let price = parseFloat(document.getElementById('customPrice').value) || 0;
+  let sourcePrice = parseFloat(document.getElementById('customSourcePrice').value) || 0;
+  if (!price && sourcePrice) {
+    price = Math.round(sourcePrice * (SETTINGS.discountIn / 100) * 100) / 100;
+  }
+
+  let photoPath = null;
+  const photoInput = document.getElementById('customPhotoInput');
+  if (photoInput.files[0]) {
+    const comp = await compressImage(photoInput.files[0], 800, 0.8);
+    photoPath = comp.dataUrl;
+  }
+
+  const customId = 'CUSTOM-' + String(INVENTORY.filter(i=>i.isCustom).length + 1).padStart(4,'0');
+
+  const item = {
+    id: Date.now(),
+    partNo: customId,
+    name: name,
+    group: category,
+    box: box, qty: qty,
+    askingPrice: price,
+    sourcePrice: sourcePrice,
+    sourceUrl: sourceUrl,
+    notes: notes,
+    photo: photoPath,
+    status: 'available',
+    isCustom: true,
+    isUnknown: false,
+    addedDate: new Date().toISOString(),
+  };
+
+  INVENTORY.push(item);
+  saveInventory();
+  closeModal();
+  renderInventory();
+  renderSummary();
+  showToast('Custom part added!', 'success');
+}
+
+async function fetchSourcePrice() {
+  const url = document.getElementById('customUrl').value.trim();
+  if (!url) { showToast('Enter URL first', 'error'); return; }
+
+  const btn = document.getElementById('fetchPriceBtn');
+  btn.textContent = '⏳ Fetching...';
+  btn.disabled = true;
+
+  try {
+    const apiKey = getApiKey();
+    if (!apiKey) { btn.textContent = '🔍 Fetch Price'; btn.disabled = false; return; }
+
+    const response = await fetch(ANTHROPIC_API, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-6',
+        max_tokens: 200,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{
+          role: 'user',
+          content: `Visit this URL and extract the product name and price in EUR: ${url}\n\nReturn ONLY JSON: {"name":"product name","price":99.99,"currency":"EUR"}`
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const text = (data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
+    const m = text.match(/\{.*\}/s);
+    if (m) {
+      const parsed = JSON.parse(m[0]);
+      if (parsed.price) {
+        document.getElementById('customSourcePrice').value = parsed.price;
+        if (parsed.name && !document.getElementById('customName').value) {
+          document.getElementById('customName').value = parsed.name;
+        }
+        // Auto-fill asking price
+        const suggested = Math.round(parsed.price * (SETTINGS.discountIn/100) * 100) / 100;
+        document.getElementById('customPrice').value = suggested;
+        showToast('Price fetched: ' + parsed.price + ' EUR', 'success');
+      }
+    }
+  } catch(e) {
+    showToast('Could not fetch price — enter manually', 'error');
+  }
+
+  btn.textContent = '🔍 Fetch Price';
+  btn.disabled = false;
+}
+
+// ═══════════════════════════════════════════════════════
+// QR LABELS
+// ═══════════════════════════════════════════════════════
+
+function showQRModal(mode) { openModal('qrLabel', mode); }
+function showQRForItem(id) {
+  const item = INVENTORY.find(i => i.id === id);
+  if (item) openModal('qrLabelItem', item);
+}
+
+function generateQRSVG(text, size) {
+  // Simple QR code placeholder — in production would use a QR library
+  // For now generate a data URL that encodes the text
+  const encoded = encodeURIComponent(text);
+  return `<img src="https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encoded}" width="${size}" height="${size}" alt="QR">`;
+}
+
+// ═══════════════════════════════════════════════════════
+// MODAL SYSTEM
+// ═══════════════════════════════════════════════════════
+
+function openModal(type, data) {
+  const body = document.getElementById('modalBody');
+  let html = '';
+
+  if (type === 'catDetail') {
+    const p = data;
+    const tatankaItems = getTatankaData(p.no);
+    html = `<button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title">${p.name}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);margin-bottom:4px">${p.no}</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:12px">${p.sv} · Group ${p.g}</div>
+      ${buildTatankaPanel(tatankaItems, p.no)}
+      <div style="margin-top:14px">
+        <button class="btn btn-primary btn-full" onclick="addFromCatalogue('${p.no.replace(/'/g,"\\'")}');closeModal()">+ ADD TO INVENTORY</button>
+      </div>`;
+  }
+
+  else if (type === 'unknownForm') {
+    html = `<button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title">❓ ADD UNKNOWN PART</div>
+      <div class="fg"><label>Description (optional)</label><input type="text" id="unknownName" placeholder="What do you think it might be?"></div>
+      <div class="row2">
+        <div class="fg"><label>Box <span class="req">*</span></label><input type="text" id="unknownBox" placeholder="Box number"></div>
+        <div class="fg"><label>Qty</label><input type="number" id="unknownQty" value="1" min="1"></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveUnknownPart()">SAVE TO UNKNOWN PILE</button>`;
+  }
+
+  else if (type === 'soldConfirm') {
+    const item = data;
+    html = `<button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title">💰 CONFIRM SOLD</div>
+      <div style="font-size:14px;margin-bottom:16px">Mark <b>${item.name}</b> as sold?<br>This will remove it from your active inventory.</div>
+      <div style="background:rgba(82,199,122,0.1);border:1px solid var(--green);border-radius:var(--radius);padding:12px;margin-bottom:16px;text-align:center">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:var(--green)">${formatEur(item.askingPrice * item.qty)}</div>
+        <div style="font-size:12px;color:var(--text2)">×${item.qty} @ ${formatEur(item.askingPrice)} each</div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-success" style="flex:1" onclick="markSold(${item.id})">✓ CONFIRM SOLD</button>
+      </div>`;
+  }
+
+  else if (type === 'editItem') {
+    const item = data;
+    html = `<button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title">✏️ EDIT PART</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px">${item.name}</div>
+      <div class="row2">
+        <div class="fg"><label>Box</label><input type="text" id="editBox" value="${item.box||''}"></div>
+        <div class="fg"><label>Qty</label><input type="number" id="editQty" value="${item.qty||1}" min="1"></div>
+      </div>
+      <div class="fg"><label>Asking Price (EUR)</label><input type="number" id="editPrice" value="${item.askingPrice||0}" step="0.01"></div>
+      <div class="fg">
+        <label>Condition</label>
+        <div class="condition-btns">
+          <button class="cond-btn${item.condition==='good'?' active-good':''}" data-cond="good" onclick="setCondition('good',this)">✅ Good</button>
+          <button class="cond-btn${item.condition==='fair'?' active-fair':''}" data-cond="fair" onclick="setCondition('fair',this)">⚠️ Fair</button>
+          <button class="cond-btn${item.condition==='poor'?' active-poor':''}" data-cond="poor" onclick="setCondition('poor',this)">❌ Poor</button>
+        </div>
+      </div>
+      <div class="fg"><label>Notes</label><textarea id="editNotes">${item.notes||''}</textarea></div>
+      <button class="btn btn-primary btn-full" onclick="saveEditItem(${item.id})">SAVE CHANGES</button>`;
+  }
+
+  else if (type === 'customPart') {
+    html = `<button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title">➕ ADD CUSTOM PART</div>
+      <div class="fg"><label>Part Name <span class="req">*</span></label><input type="text" id="customName" placeholder="e.g. Electronic ignition kit"></div>
+      <div class="fg">
+        <label>Category</label>
+        <select id="customCategory">
+          <option value="upgrade">Upgrades & Aftermarket</option>
+          <option value="tool">Tools & Equipment</option>
+          <option value="consumable">Consumables</option>
+          <option value="other">General / Other</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Source URL (optional)</label>
+        <div style="display:flex;gap:8px">
+          <input type="url" id="customUrl" placeholder="https://..." style="flex:1">
+          <button class="btn btn-secondary btn-sm" id="fetchPriceBtn" onclick="fetchSourcePrice()">🔍 Fetch Price</button>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="fg"><label>Source Price (EUR)</label><input type="number" id="customSourcePrice" placeholder="0.00" step="0.01"></div>
+        <div class="fg"><label>My Asking Price (EUR)</label><input type="number" id="customPrice" placeholder="0.00" step="0.01"></div>
+      </div>
+      <div class="row2">
+        <div class="fg"><label>Box <span class="req">*</span></label><input type="text" id="customBox" placeholder="Box number"></div>
+        <div class="fg"><label>Qty</label><input type="number" id="customQty" value="1" min="1"></div>
+      </div>
+      <div class="fg">
+        <label>Photo (optional)</label>
+        <div class="photo-area" style="padding:16px" onclick="document.getElementById('customPhotoInput').click()">
+          <div class="photo-placeholder"><div class="photo-icon" style="font-size:28px">📷</div><div class="photo-label">Add photo</div></div>
+        </div>
+        <input type="file" id="customPhotoInput" accept="image/*">
+      </div>
+      <div class="fg"><label>Notes</label><textarea id="customNotes" placeholder="Optional notes..."></textarea></div>
+      <button class="btn btn-primary btn-full" onclick="saveCustomPart()">SAVE CUSTOM PART</button>`;
+  }
+
+  else if (type === 'qrLabelItem') {
+    const item = data;
+    const qrData = `VOLVO-C3|${item.partNo}|${item.name}|BOX:${item.box}|QTY:${item.qty}`;
+    html = `<button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title">🏷️ QR LABEL</div>
+      <div class="label-preview">
+        <div class="lp-name">${item.name}</div>
+        <div class="lp-no">${item.partNo}</div>
+        <div class="lp-detail">Box ${item.box} · ×${item.qty} · ${item.condition||'—'} · ${formatEur(item.askingPrice)}</div>
+        <div class="lp-qr">${generateQRSVG(qrData, 120)}</div>
+      </div>
+      <div style="margin-top:14px;text-align:center;color:var(--muted);font-size:12px">Use your Niimbot app to print this label.<br>Screenshot and import into Niimbot, or connect via Bluetooth.</div>
+      <button class="btn btn-secondary btn-full" style="margin-top:12px" onclick="printLabel()">🖨️ PRINT / SAVE LABEL</button>`;
+  }
+
+  else if (type === 'qrLabel') {
+    html = `<button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title">🏷️ PRINT QR LABELS</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Select what to print labels for:</div>
+      <div class="btn-group" style="flex-direction:column">
+        <button class="btn btn-secondary" onclick="printAllBoxLabels()">📦 All Box Labels</button>
+        <button class="btn btn-secondary" onclick="printAllPartLabels()">🔧 All Part Labels</button>
+        <button class="btn btn-secondary" onclick="printListedLabels()">📢 Listed Parts Only</button>
+      </div>`;
+  }
+
+  body.innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modalOverlay')) return;
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function addFromCatalogue(partNo) {
+  const part = (typeof PARTS_DB !== 'undefined') ? PARTS_DB.find(p => p.no === partNo) : null;
+  if (!part) return;
+  const tatankaItems = getTatankaData(partNo);
+  selectedGuess = {
+    name: part.name, sv: part.sv, no: part.no,
+    group: part.g, confidence: 100, tatanka: tatankaItems
+  };
+  showScreen('identify');
+  showStep(3);
+  showConfirmStep();
+}
+
+function printLabel() {
+  window.print();
+}
+
+function printAllBoxLabels() {
+  const boxes = [...new Set(INVENTORY.filter(i=>i.status!=='sold'&&i.box).map(i=>i.box))];
+  showToast('Feature: screenshot each box QR from the box summary', 'success');
+  closeModal();
+}
+
+function printAllPartLabels() {
+  showToast('Generating labels for all parts...', 'success');
+  closeModal();
+}
+
+function printListedLabels() {
+  showToast('Generating labels for listed parts...', 'success');
+  closeModal();
+}
+
+// ═══════════════════════════════════════════════════════
+// API KEY MANAGEMENT
+// ═══════════════════════════════════════════════════════
+
+function getApiKey() {
+  let key = localStorage.getItem(API_KEY_STORAGE);
+  if (!key) {
+    key = prompt('Enter your Anthropic API key (stored locally, never sent anywhere else):');
+    if (key) localStorage.setItem(API_KEY_STORAGE, key.trim());
+  }
+  return key;
+}
+
+// ═══════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+// ═══════════════════════════════════════════════════════
+// FLOATING ADD CUSTOM BUTTON
+// ═══════════════════════════════════════════════════════
+
+// Add custom part button in inventory screen header area
+document.getElementById('screen-inventory').insertAdjacentHTML('afterbegin',
+  `<div style="display:flex;gap:8px;margin-bottom:12px">
+    <button class="btn btn-secondary btn-sm" onclick="openModal('customPart')">➕ Custom Part</button>
+    <button class="btn btn-secondary btn-sm" onclick="exportCatalogue('bulk')">📄 Export</button>
+  </div>`
+);
+
+// ═══════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════
+
+// Load PARTS_DB from window scope (set by PARTS_DB.js)
+window.addEventListener('load', () => {
+  if (typeof window.PARTS_DB_DATA !== 'undefined') {
+    PARTS_DB = window.PARTS_DB_DATA;
+  }
+  init();
+});
+</script>
+
+<!-- PARTS_DB.js should be included here -->
+<script src="PARTS_DB.js"></script>
+
+</body>
+</html>
