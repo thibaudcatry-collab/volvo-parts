@@ -1473,11 +1473,17 @@ ${candidates}
 TASK: Give the 3 most likely part numbers from the Volvo C3 catalogue.
 
 REASONING RULES:
-1. If you recognise the part type clearly (e.g. clutch pedal, brake pedal, accelerator pedal), search for ALL variants of that part — different pedals share the same visual language.
-2. A pedal = look for pedal, arm, lever in the list. A bracket = look for fäste, konsol. A seal = look for tätning, packning.
-3. If the exact part is not in the candidate list, use your knowledge of Volvo C3 to suggest the most likely number anyway — do NOT return "unable to identify" or "not in database".
-4. Always return 3 guesses. Lower confidence is fine — a 40% guess is more useful than giving up.
-5. For parts with a clear function (pedal, pump, valve, filter), confidence should be at least 50% even without a part number visible.
+1. If you recognise the part type clearly, list ALL catalogue variants of that type as your 3 guesses — do not fixate on one specific variant.
+2. For PEDALS specifically: the C3 has 3 pedals that look very similar. Distinguish them by:
+   - Clutch pedal (kopplingspedalarm): leftmost, typically longest arm, connects to clutch linkage
+   - Brake pedal (bromspedalarm): middle, often widest footpad, connects to brake servo/master cylinder
+   - Accelerator pedal (gaspedalarm): rightmost, often narrowest/lightest, connects to throttle rod
+   When unsure which pedal, list all 3 variants as your guesses ranked by probability.
+3. For visually similar parts (pedals, brackets, levers), your 3 guesses should be the 3 most likely VARIANTS of that type — not 3 different part types.
+4. A pedal = look for pedalarm, koppling, broms, gas in the list. A bracket = fäste, konsol. A seal = tätning, packning.
+5. If the exact part is not in the candidate list, use your Volvo C3 knowledge to suggest the most likely number — do NOT return "unable to identify".
+6. Always return 3 guesses. A 40% guess is more useful than giving up.
+7. For parts with clear function (pedal, pump, valve, filter), confidence should be at least 50%.
 ${description.visible_text ? '6. PRIORITY: visible text "' + description.visible_text + '" — if this is a part number, use it with confidence 95+.' : ''}
 
 Return ONLY a JSON array (best match first):
@@ -1540,6 +1546,71 @@ Return ONLY the JSON array.`;
 }
 
 
+// Disambiguation widget — shown when AI sees a known ambiguous category
+function disambigWidget(desc) {
+  if (!desc || !desc.part_type) return '';
+  const type = desc.part_type.toLowerCase();
+
+  // Pedal disambiguation
+  if (type.includes('pedal')) {
+    return `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:6px">WHICH PEDAL?</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button onclick="forcePartGuess('644768','Clutch pedal arm','Kopplingspedalarm','41')" style="padding:5px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;background:var(--surface3);border:1px solid var(--border2);border-radius:5px;color:var(--text);cursor:pointer">🦶 Clutch</button>
+        <button onclick="forcePartGuess('419768','Brake pedal arm','Bromspedalarm','51')" style="padding:5px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;background:var(--surface3);border:1px solid var(--border2);border-radius:5px;color:var(--text);cursor:pointer">🛑 Brake</button>
+        <button onclick="forcePartGuess('1272606','Accelerator pedal','Gaspedalarm','27')" style="padding:5px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;background:var(--surface3);border:1px solid var(--border2);border-radius:5px;color:var(--text);cursor:pointer">⚡ Accelerator</button>
+      </div>
+    </div>`;
+  }
+
+  // Hose disambiguation
+  if (type.includes('hose') || type.includes('pipe') || type.includes('slang')) {
+    return `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:6px">WHICH SYSTEM?</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button onclick="setGroupHint('26')" style="padding:5px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;background:var(--surface3);border:1px solid var(--border2);border-radius:5px;color:var(--text);cursor:pointer">🌡️ Cooling</button>
+        <button onclick="setGroupHint('23')" style="padding:5px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;background:var(--surface3);border:1px solid var(--border2);border-radius:5px;color:var(--text);cursor:pointer">⛽ Fuel</button>
+        <button onclick="setGroupHint('52')" style="padding:5px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;background:var(--surface3);border:1px solid var(--border2);border-radius:5px;color:var(--text);cursor:pointer">🛑 Brake</button>
+        <button onclick="setGroupHint('87')" style="padding:5px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;background:var(--surface3);border:1px solid var(--border2);border-radius:5px;color:var(--text);cursor:pointer">🌡️ Heating</button>
+      </div>
+    </div>`;
+  }
+
+  // Spring disambiguation
+  if (type.includes('spring') || type.includes('fjäder')) {
+    return `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:6px">WHICH SYSTEM?</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button onclick="setGroupHint('72')" style="padding:5px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;background:var(--surface3);border:1px solid var(--border2);border-radius:5px;color:var(--text);cursor:pointer">🔩 Front suspension</button>
+        <button onclick="setGroupHint('73')" style="padding:5px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;background:var(--surface3);border:1px solid var(--border2);border-radius:5px;color:var(--text);cursor:pointer">🔩 Rear suspension</button>
+        <button onclick="setGroupHint('55')" style="padding:5px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;background:var(--surface3);border:1px solid var(--border2);border-radius:5px;color:var(--text);cursor:pointer">🛑 Handbrake</button>
+      </div>
+    </div>`;
+  }
+
+  return '';
+}
+
+function forcePartGuess(partNoBase, name, sv, group) {
+  // Look up exact part number in PARTS_DB
+  const dbMatch = typeof PARTS_DB !== 'undefined'
+    ? PARTS_DB.find(p => p.no.replace(/-\d$/, '').replace(/[A-Z]$/, '') === partNoBase || p.no.startsWith(partNoBase))
+    : null;
+  const no = dbMatch ? dbMatch.no : partNoBase;
+  const tatanka = getTatankaData(no);
+  selectedGuess = { name: dbMatch?.name || name, sv: dbMatch?.sv || sv, no, group: dbMatch?.g || group,
+                    confidence: 90, reason: 'Manually identified as ' + name, tatanka, fromManual: true };
+  showToast('Selected: ' + (dbMatch?.name || name), 'success');
+  showConfirmStep();
+}
+
+function setGroupHint(group) {
+  // Set the group filter and re-analyze
+  document.getElementById('groupFilter').value = group;
+  showStep(1);
+  showToast('Filter set — tap Analyze again', 'success');
+}
+
 function renderGuesses(guesses, description, wasSonnet) {
   const container = document.getElementById('guessResults');
   if (!guesses || guesses.length === 0) {
@@ -1561,6 +1632,7 @@ function renderGuesses(guesses, description, wasSonnet) {
       ${desc.connections ? `<div style="font-size:11px;color:var(--text2);margin-top:2px">${desc.connections}</div>` : ''}
       ${desc.notable ? `<div style="font-size:11px;color:var(--text2)">${desc.notable}</div>` : ''}
       ${visText}
+      ${disambigWidget(desc)}
     </div>`;
   }
 
@@ -1614,12 +1686,11 @@ function renderGuesses(guesses, description, wasSonnet) {
     const bestTatanka = tatankaItems.find(t => !t.is_used) || tatankaItems[0];
     const priceEur = bestTatanka ? sekToEur(bestTatanka.price_sek) : null;
 
-    // Show Tatanka image if available, else photo thumbnail, else icon
+    // Show Tatanka reference image if available, otherwise generic icon
+    // (don't repeat the user's own photo — it adds no information)
     const thumb = bestTatanka && bestTatanka.image_local
       ? `<img class="guess-thumb" src="${bestTatanka.image_local}" alt="" title="Tatanka reference photo">`
-      : currentPhoto
-        ? `<img class="guess-thumb" src="data:image/jpeg;base64,${currentPhoto}" alt="" style="opacity:0.6">`
-        : `<div class="guess-thumb-placeholder">🔧</div>`;
+      : `<div class="guess-thumb-placeholder">🔧</div>`;
 
     const conf = g.confidence || 0;
     const { label, color } = confLabel(conf);
