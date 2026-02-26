@@ -580,7 +580,7 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
           <button class="btn btn-secondary btn-sm" id="addAngleBtn" style="display:none" onclick="document.getElementById('angleInput').click()">📷 +Angle</button>
         </div>
         <input type="file" id="galleryInput" accept="image/*" style="display:none">
-        <input type="file" id="angleInput" accept="image/*" capture="environment" style="display:none">
+        <input type="file" id="angleInput" accept="image/*" style="display:none">
         <div id="angleStrip" style="display:none; margin-top:8px; gap:6px; flex-wrap:wrap;"></div>
       </div>
 
@@ -1166,15 +1166,29 @@ function removeAngle(i) {
 async function handlePhoto(e) {
   const file = e.target.files[0];
   if (!file) return;
-  const compressed = await compressImage(file, 1200, 0.85);
-  currentPhoto = compressed.b64;
-  currentPhotoBlob = compressed.blob;
-  const photoArea = document.getElementById('photoArea');
-  photoArea.classList.add('has-photo');
-  photoArea.innerHTML = '<img src="' + compressed.dataUrl + '" alt="Part photo">';
-  document.getElementById('analyzeBtn').disabled = false;
-  document.getElementById('addAngleBtn').style.display = 'inline-flex';
-  e.target.value = '';
+
+  try {
+    const compressed = await compressImage(file, 1200, 0.85);
+    currentPhoto = compressed.b64;
+    currentPhotoBlob = compressed.blob;
+
+    const photoArea = document.getElementById('photoArea');
+    // Remove onclick before setting innerHTML so we don't lose the handler
+    photoArea.removeAttribute('onclick');
+    photoArea.classList.add('has-photo');
+    photoArea.innerHTML = '<img src="' + compressed.dataUrl + '" alt="Part photo" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">';
+    // Re-attach tap-to-retake
+    photoArea.onclick = () => document.getElementById('cameraInput').click();
+
+    document.getElementById('analyzeBtn').disabled = false;
+    document.getElementById('addAngleBtn').style.display = 'inline-flex';
+    showToast('Photo ready ✓', 'success');
+  } catch(err) {
+    showToast('Photo load failed: ' + err.message, 'error');
+  }
+
+  // Reset input so same file can be selected again on iOS
+  setTimeout(() => { e.target.value = ''; }, 100);
 }
 
 async function compressImage(file, maxWidth, quality) {
