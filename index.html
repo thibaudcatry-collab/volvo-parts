@@ -1727,31 +1727,56 @@ Respond ONLY with valid JSON:
 
 function showConfirmStep() {
   if (!selectedGuess) return;
-  showStep(3);
-
   const g = selectedGuess;
-  const tatankaItems = g.tatanka || [];
 
-  // Part summary
-  document.getElementById('confirmedPartSummary').innerHTML = `
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-      ${tatankaItems[0]?.image_local ? `<img src="${tatankaItems[0].image_local}" style="width:64px;height:64px;border-radius:6px;object-fit:cover;border:1px solid var(--accent)">` : `<div style="width:64px;height:64px;border-radius:6px;background:var(--surface3);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px">\ud83d\udd27</div>`}
+  // Fill step 1 manual fields
+  if (g.name) document.getElementById('manualName').value = g.name;
+  if (g.no)   document.getElementById('manualPartNo').value = g.no || '';
+  if (g.sv)   document.getElementById('manualNameSv').value = g.sv || '';
+  if (g.group) document.getElementById('manualGroup').value = g.group || '';
+
+  // Update smart search display
+  if (g.name) {
+    document.getElementById('smartSearch').value = g.name;
+    document.getElementById('selectedPartName').textContent = g.name;
+    document.getElementById('selectedPartNo').textContent = g.no || '—';
+    document.getElementById('selectedPartSv').textContent = g.sv || '';
+    document.getElementById('selectedPartPreview').style.display = 'block';
+    partSelected = true;
+  }
+
+  // Suggest box from inventory
+  if (g.no) suggestBoxForPart(g.no);
+
+  // Populate step 3 summary
+  const tatankaItems = g.tatanka || [];
+  const thumb = tatankaItems[0]?.image_local
+    ? `<img src="${tatankaItems[0].image_local}" style="width:64px;height:64px;border-radius:6px;object-fit:cover;border:1px solid var(--accent)">`
+    : `<div style="width:64px;height:64px;border-radius:6px;background:var(--surface3);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px">🔧</div>`;
+  const summaryEl = document.getElementById('confirmedPartSummary');
+  if (summaryEl) {
+    summaryEl.innerHTML = `<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+      ${thumb}
       <div>
         <div style="font-size:16px;font-weight:600;margin-bottom:3px">${g.name}</div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)">${g.no || '\u2014'}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)">${g.no || '—'}</div>
         ${g.sv ? `<div style="font-size:12px;color:var(--text2)">${g.sv}</div>` : ''}
       </div>
     </div>`;
-
-  // Tatanka panel
-  document.getElementById('tatankaPanelConfirm').innerHTML = buildTatankaPanel(tatankaItems, g.no);
-
-  // Suggested price
-  const suggested = getSuggestedPrice(tatankaItems);
-  if (suggested) {
-    document.getElementById('confirmPrice').value = suggested.toFixed(2);
   }
+
+  const tpEl = document.getElementById('tatankaPanelConfirm');
+  if (tpEl) tpEl.innerHTML = buildTatankaPanel(tatankaItems, g.no);
+
+  const suggested = getSuggestedPrice(tatankaItems);
+  if (suggested) document.getElementById('confirmPrice').value = suggested.toFixed(2);
+
+  // Render Tatanka picker
+  renderTatankaMatchOptions();
+
+  showToast('Part identified ✓', 'success');
 }
+
 
 function buildTatankaPanel(items, partNo) {
   if (!items || items.length === 0) return '';
@@ -1831,8 +1856,13 @@ function setEntryMode(mode) {
 
 function onSmartSearch(val) {
   const el = document.getElementById('smartSearchResults');
-  if (!val || val.trim().length < 2 || typeof PARTS_DB === 'undefined' || PARTS_DB.length === 0) {
+  if (!val || val.trim().length < 2) {
     el.style.display = 'none'; return;
+  }
+  if (typeof PARTS_DB === 'undefined' || PARTS_DB.length === 0) {
+    el.style.display = 'block';
+    el.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:var(--muted)">⚠️ Parts catalogue not loaded — check PARTS_DB.js is in the same folder</div>';
+    return;
   }
   const q = val.trim();
   const isPartNo = /^\d/.test(q);
@@ -2385,43 +2415,56 @@ function filterCatalogue() {
 
 function renderCatalogue() {
   const list = document.getElementById('catList');
-  if (!list || typeof PARTS_DB === 'undefined') return;
+  if (!list || !PARTS_DB || PARTS_DB.length === 0) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">CATALOGUE NOT LOADED</div><div class="empty-text">Make sure PARTS_DB.js is in the same folder as index.html</div></div>`;
+    return;
+  }
 
   if (!catSearch && !catFilter) {
-    list.innerHTML = `<div class="empty"><div class="empty-icon">\ud83d\udccb</div><div class="empty-title">SEARCH THE CATALOGUE</div><div class="empty-text">Type a part name, number, or Swedish name.<br>Or select a system filter above.</div></div>`;
+    list.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">SEARCH THE CATALOGUE</div><div class="empty-text">Type a part name, number, or Swedish term above</div></div>`;
     return;
   }
 
   let items = PARTS_DB;
   if (catFilter) items = items.filter(p => p.g === catFilter);
+
   if (catSearch) {
-    items = items.filter(p =>
-      (p.name||'').toLowerCase().includes(catSearch) ||
-      (p.no||'').toLowerCase().includes(catSearch) ||
-      (p.sv||'').toLowerCase().includes(catSearch)
-    );
+    // Use synonym-aware scoring when search engine is available
+    if (typeof expandSearchTerms === "function") {
+      const terms = expandSearchTerms(catSearch);
+      const scored = items
+        .map(p => ({ p, score: searchScore(p, terms) }))
+        .filter(x => x.score > 0)
+        .sort((a, b) => b.score - a.score);
+      items = scored.map(x => x.p);
+    } else {
+      // Fallback: simple includes
+      items = items.filter(p =>
+        (p.name||'').toLowerCase().includes(catSearch) ||
+        (p.no||'').toLowerCase().includes(catSearch) ||
+        (p.sv||'').toLowerCase().includes(catSearch)
+      );
+    }
   }
 
   const shown = items.slice(0, 100);
   if (shown.length === 0) {
-    list.innerHTML = `<div class="empty"><div class="empty-icon">\ud83d\udd0d</div><div class="empty-title">NO RESULTS</div><div class="empty-text">Try a different search term.</div></div>`;
+    list.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">NO RESULTS</div><div class="empty-text">Try different words — synonyms are supported (e.g. "bearing" finds lager)</div></div>`;
     return;
   }
 
-  list.innerHTML = (items.length > 100 ? `<div class="section-header">Showing 100 of ${items.length} results \u2014 refine your search</div>` : '') +
+  list.innerHTML = (items.length > 100 ? `<div class="section-header">Showing 100 of ${items.length} results — refine your search</div>` : '') +
     shown.map(p => {
       const tatankaItems = getTatankaData(p.no);
       const bestT = tatankaItems.find(t=>!t.is_used) || tatankaItems[0];
       const eur = bestT ? sekToEur(bestT.price_sek) : null;
-      const thumb = bestT?.image_local ? `<img style="width:40px;height:40px;border-radius:5px;object-fit:cover;border:1px solid var(--border);flex-shrink:0" src="${bestT.image_local}" alt="">` : `<div style="width:40px;height:40px;border-radius:5px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;color:var(--muted)">\ud83d\udd27</div>`;
-      return `<div class="cat-item" onclick="openCatDetail('${p.no.replace(/'/g,"\\\'")}')">
-        ${thumb}
-        <div class="cat-item-info">
-          <div class="cat-item-name">${p.name}</div>
-          <div class="cat-item-no">${p.no} \u00b7 ${p.sv}</div>
-        </div>
-        <div class="cat-item-price">${eur ? formatEur(eur) : ''}</div>
-      </div>`;
+      const thumb = bestT?.image_local
+        ? `<img style="width:40px;height:40px;border-radius:5px;object-fit:cover;border:1px solid var(--border);flex-shrink:0" src="${bestT.image_local}" alt="">`
+        : `<div style="width:40px;height:40px;border-radius:5px;background:var(--surface3);border:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px">🔧</div>`;
+      return `<div class="cat-item" onclick="openCatDetail('${p.no.replace(/'/g,"\\'")}')">`+
+        thumb +
+        `<div class="cat-item-info"><div class="cat-item-name">${p.name}</div><div class="cat-item-no">${p.no} · ${p.sv||''}</div></div>` +
+        `<div class="cat-item-price">${eur ? formatEur(eur) : ''}</div></div>`;
     }).join('');
 }
 
@@ -2434,14 +2477,16 @@ function openCatDetail(partNo) {
 function addFromCatalogue(partNo) {
   const part = (typeof PARTS_DB !== 'undefined') ? PARTS_DB.find(p => p.no === partNo) : null;
   if (!part) return;
-  const tatankaItems = getTatankaData(partNo);
-  selectedGuess = {
-    name: part.name, sv: part.sv, no: part.no,
-    group: part.g, confidence: 100, tatanka: tatankaItems
-  };
+  // Apply to step 1 fields and switch to identify screen
+  applyPartFromDB(part.no, part.name, part.sv || '', part.g || '');
   showScreen('identify');
-  showStep(3);
+  closeModal();
+  // Go straight to step 3 (PRICE) since part is already known from catalogue
+  const tatankaItems = getTatankaData(partNo);
+  selectedGuess = { name: part.name, sv: part.sv||'', no: part.no, group: part.g||'',
+    confidence: 100, tatanka: tatankaItems, fromManual: true };
   showConfirmStep();
+  showStep(3);
 }
 
 function filterByBox(box) {
