@@ -1359,25 +1359,47 @@ function updateHeaderStats() {
 // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 
 function tryLoadPartsDB() {
-  if (typeof window.PARTS_DB_DATA !== 'undefined' && window.PARTS_DB_DATA.length > 0) {
-    PARTS_DB = window.PARTS_DB_DATA;
-    console.log('PARTS_DB loaded:', PARTS_DB.length, 'parts');
+  // Try all common variable names that PARTS_DB.js might export
+  const candidates = [
+    window.PARTS_DB_DATA,
+    window.PARTS_DB,
+    window.partsDB,
+    window.parts_db,
+    window.C3_PARTS,
+  ];
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate) && candidate.length > 0) {
+      PARTS_DB = candidate;
+      console.log('PARTS_DB loaded:', PARTS_DB.length, 'parts from', JSON.stringify(Object.keys(window).filter(k => window[k] === candidate)));
+      if (document.getElementById('settingPartCount'))
+        document.getElementById('settingPartCount').textContent = PARTS_DB.length;
+      return true;
+    }
+  }
+  // Also check if the global PARTS_DB itself was set by the script directly
+  if (typeof PARTS_DB !== 'undefined' && PARTS_DB.length > 0) {
+    console.log('PARTS_DB already set:', PARTS_DB.length, 'parts');
     return true;
   }
+  console.warn('PARTS_DB not found — tried PARTS_DB_DATA, PARTS_DB, partsDB, C3_PARTS on window');
   return false;
 }
 
 function bootApp() {
   tryLoadPartsDB();
   init();
-  // Re-check after a short delay in case PARTS_DB.js loaded late
-  setTimeout(() => {
-    if (PARTS_DB.length === 0 && tryLoadPartsDB()) {
-      console.log('PARTS_DB late-loaded, refreshing UI');
-      renderCatalogue();
-      updateHeaderStats();
-    }
-  }, 500);
+  // Retry at 300ms and 1s in case PARTS_DB.js loaded slightly late
+  [300, 1000].forEach(delay => {
+    setTimeout(() => {
+      if (PARTS_DB.length === 0) {
+        if (tryLoadPartsDB()) {
+          console.log('PARTS_DB late-loaded at', delay, 'ms:', PARTS_DB.length, 'parts');
+          renderCatalogue();
+          updateHeaderStats();
+        }
+      }
+    }, delay);
+  });
 }
 
 if (document.readyState === 'loading') {
@@ -2938,7 +2960,10 @@ function saveAllBulk() { console.warn("saveAllBulk not implemented"); }
 
 </script>
 
-<!-- PARTS_DB and TATANKA_DB are inlined below at build time -->
+<!-- External data files — must be in same folder as index.html -->
+<script src="PARTS_DB.js"></script>
+<script src="tatanka_db.js"></script>
+<script src="TATANKA_DB.js"></script>
 
 </body>
 </html>
