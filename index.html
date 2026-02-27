@@ -398,6 +398,10 @@ textarea { resize: vertical; min-height: 70px; }
 .cond-btn.active-good { border-color: var(--green); background: rgba(82,199,122,0.1); color: var(--green); }
 .cond-btn.active-fair { border-color: var(--accent); background: rgba(232,184,75,0.1); color: var(--accent); }
 .cond-btn.active-poor { border-color: var(--red); background: rgba(224,82,82,0.1); color: var(--red); }
+.tatanka-match-option:hover { border-color: var(--accent) !important; background: var(--surface2); }
+#smartSearchResults > div:last-child { border-bottom: none !important; }
+#smartSearchResults > div:hover { background: var(--surface3); }
+#smartSearchResults { box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
 
 /* ── STATUS SELECTOR ── */
 .status-row { display: flex; gap: 6px; }
@@ -557,16 +561,117 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
   <!-- ═══ SCREEN: IDENTIFY ═══ -->
   <div class="screen active" id="screen-identify">
     <div class="steps">
-      <div class="step active" id="step1"><span class="step-num">1</span>PHOTO</div>
-      <div class="step" id="step2"><span class="step-num">2</span>IDENTIFY</div>
-      <div class="step" id="step3"><span class="step-num">3</span>CONFIRM</div>
-      <div class="step" id="step4"><span class="step-num">4</span>SAVE</div>
+      <div class="step active" id="step1"><span class="step-num">1</span>DETAILS</div>
+      <div class="step" id="step2"><span class="step-num">2</span>PHOTO</div>
+      <div class="step" id="step3"><span class="step-num">3</span>PRICE</div>
+      <div class="step" id="step4"><span class="step-num">4</span>SAVED</div>
     </div>
 
-    <!-- Step 1: Photo -->
+    <!-- Step 1: Manual entry -->
     <div id="identStep1">
+
+      <!-- Mode toggle: catalogue part vs custom part -->
+      <div style="display:flex;gap:0;margin-bottom:12px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <button id="modeTabCatalogue" onclick="setEntryMode('catalogue')"
+          style="flex:1;padding:10px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;border:none;cursor:pointer;background:var(--accent);color:#000;letter-spacing:0.5px">
+          📋 CATALOGUE PART
+        </button>
+        <button id="modeTabCustom" onclick="setEntryMode('custom')"
+          style="flex:1;padding:10px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;border:none;cursor:pointer;background:var(--surface2);color:var(--muted);letter-spacing:0.5px">
+          ✏️ CUSTOM PART
+        </button>
+      </div>
+
+      <!-- ── CATALOGUE MODE ── -->
+      <div id="entryModeCatalogue" class="card">
+        <div class="card-title"><span class="ct-icon">🔍</span> FIND PART</div>
+
+        <!-- Smart search: name OR part number -->
+        <div class="fg">
+          <label>Search by name or part number <span class="req">*</span></label>
+          <input type="text" id="smartSearch"
+            placeholder="e.g. clutch pedal, 461537, brake disc..."
+            oninput="onSmartSearch(this.value)"
+            autocomplete="off" autocorrect="off" spellcheck="false"
+            style="font-size:15px">
+          <div id="smartSearchResults" style="display:none;margin-top:4px;max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2)"></div>
+        </div>
+
+        <!-- Selected part preview (shown after picking) -->
+        <div id="selectedPartPreview" style="display:none;background:var(--surface2);border:1px solid var(--accent);border-left:3px solid var(--accent);border-radius:var(--radius);padding:10px;margin-bottom:2px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:4px;letter-spacing:1px">SELECTED PART</div>
+          <div id="selectedPartName" style="font-size:15px;font-weight:600;margin-bottom:2px"></div>
+          <div id="selectedPartNo" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)"></div>
+          <div id="selectedPartSv" style="font-size:11px;color:var(--text2);margin-top:1px"></div>
+          <button onclick="clearSelectedPart()" style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--red);background:none;border:none;cursor:pointer;padding:0">✕ Change part</button>
+        </div>
+
+        <!-- Hidden fields populated by selection -->
+        <input type="hidden" id="manualPartNo">
+        <input type="hidden" id="manualName">
+        <input type="hidden" id="manualNameSv">
+        <input type="hidden" id="manualGroup">
+      </div>
+
+      <!-- ── CUSTOM PART MODE ── -->
+      <div id="entryModeCustom" class="card" style="display:none">
+        <div class="card-title"><span class="ct-icon">✏️</span> CUSTOM PART</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">For parts not in the official catalogue: aftermarket upgrades, accessories, fabricated parts, etc.</div>
+        <div class="fg">
+          <label>Part Name <span class="req">*</span></label>
+          <input type="text" id="customName" placeholder="e.g. Electronic ignition kit, Wheel widener">
+        </div>
+        <div class="fg">
+          <label>Brand / Reference</label>
+          <input type="text" id="customBrand" placeholder="e.g. Pertronix, custom fabricated">
+        </div>
+        <div class="fg">
+          <label>Source / URL</label>
+          <input type="text" id="customSourceUrl" placeholder="e.g. https://shop.example.com/product">
+        </div>
+      </div>
+
+      <!-- ── COMMON FIELDS (both modes) ── -->
       <div class="card">
-        <div class="card-title"><span class="ct-icon">📷</span> PHOTOGRAPH PART</div>
+        <div class="card-title"><span class="ct-icon">📦</span> STOCK DETAILS</div>
+
+        <div class="row2">
+          <div class="fg">
+            <label>Box <span class="req">*</span></label>
+            <input type="text" id="manualBox" placeholder="e.g. 4">
+            <div id="boxSuggestion" style="display:none;margin-top:4px;font-size:11px;color:var(--accent);cursor:pointer;font-family:'IBM Plex Mono',monospace"></div>
+          </div>
+          <div class="fg">
+            <label>Qty</label>
+            <input type="number" id="manualQty" value="1" min="1">
+          </div>
+        </div>
+
+        <div class="fg">
+          <label>Condition</label>
+          <div class="condition-btns">
+            <button class="cond-btn" id="condBtnGood" onclick="setCondition('good',this)">✅ Good</button>
+            <button class="cond-btn" id="condBtnFair" onclick="setCondition('fair',this)">⚠️ Fair</button>
+            <button class="cond-btn" id="condBtnPoor" onclick="setCondition('poor',this)">❌ Poor</button>
+          </div>
+        </div>
+
+        <div class="fg">
+          <label>Notes</label>
+          <textarea id="manualNotes" placeholder="Optional notes..."></textarea>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="btn btn-secondary" style="flex:1" onclick="showScreen('bulk')">⚡ BULK</button>
+          <button class="btn btn-primary" style="flex:2" onclick="goToPhotoStep()">NEXT: ADD PHOTO →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Photo + optional AI -->
+    <div id="identStep2" style="display:none">
+      <div class="card">
+        <div class="card-title"><span class="ct-icon">📷</span> ADD PHOTO <span style="font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-weight:400">(optional)</span></div>
         <div class="photo-area" id="photoArea" onclick="document.getElementById('cameraInput').click()">
           <div class="photo-placeholder">
             <div class="photo-icon">📷</div>
@@ -575,19 +680,21 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
           </div>
         </div>
         <input type="file" id="cameraInput" accept="image/*" capture="environment">
-        <div style="margin-top:8px; display:flex; gap:8px;">
+        <div style="margin-top:8px;display:flex;gap:8px;">
           <button class="btn btn-secondary btn-sm" style="flex:1" onclick="document.getElementById('galleryInput').click()">📁 Gallery</button>
           <button class="btn btn-secondary btn-sm" id="addAngleBtn" style="display:none" onclick="document.getElementById('angleInput').click()">📷 +Angle</button>
         </div>
         <input type="file" id="galleryInput" accept="image/*" style="display:none">
         <input type="file" id="angleInput" accept="image/*" style="display:none">
-        <div id="angleStrip" style="display:none; margin-top:8px; gap:6px; flex-wrap:wrap;"></div>
+        <div id="angleStrip" style="display:none;margin-top:8px;gap:6px;flex-wrap:wrap;"></div>
       </div>
 
-      <div class="card">
-        <div class="card-title"><span class="ct-icon">🔧</span> OPTIONAL: FILTER BY SYSTEM</div>
+      <!-- AI identification (optional) -->
+      <div class="card" id="aiCard">
+        <div class="card-title"><span class="ct-icon">🤖</span> AI IDENTIFICATION <span style="font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-weight:400">(optional)</span></div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">If you already entered the part details above, skip this. Use AI only if you need help identifying the part.</div>
         <div class="fg">
-          <label>System (narrows AI search)</label>
+          <label>Filter by system (optional)</label>
           <select id="groupFilter">
             <option value="">All systems — let AI decide</option>
             <option value="20,21,22,23,25,26,27">Engine & Fuel</option>
@@ -600,67 +707,50 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
             <option value="81,83,84,85,86,87,88">Cab, Body & Interior</option>
           </select>
         </div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-primary" style="flex:2" id="analyzeBtn" disabled onclick="analyzePhoto()">
-            <span class="spinner" style="display:none" id="analyzeSpinner"></span>
-            <span id="analyzeBtnText">🔍 ANALYZE PHOTO</span>
-          </button>
-          <button class="btn btn-secondary" style="flex:1" onclick="showScreen('bulk')">⚡ BULK</button>
+        <button class="btn btn-secondary btn-full" id="analyzeBtn" disabled onclick="analyzePhoto()">
+          <span class="spinner" style="display:none" id="analyzeSpinner"></span>
+          <span id="analyzeBtnText">🔍 RUN AI IDENTIFICATION</span>
+        </button>
+        <div id="aiResults" style="display:none;margin-top:10px">
+          <div id="guessResults"></div>
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-secondary btn-sm" onclick="retryAnalysis()">🔄 Try Again</button>
+            <button class="btn btn-danger btn-sm" onclick="clearAiResults()">✕ Clear</button>
+          </div>
         </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-secondary" onclick="showStep(1)">← Back</button>
+        <button class="btn btn-primary" style="flex:1" onclick="goToPriceStep()">NEXT: SET PRICE →</button>
       </div>
     </div>
 
-    <!-- Step 2: Results -->
-    <div id="identStep2" style="display:none">
-      <div class="card">
-        <div class="card-title"><span class="ct-icon">🤖</span> AI IDENTIFICATION</div>
-        <div id="guessResults"></div>
-        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="btn btn-secondary btn-sm" onclick="retryAnalysis()">🔄 Try Again</button>
-          <button class="btn btn-secondary btn-sm" onclick="addAsUnknown()">❓ Unknown</button>
-          <button class="btn btn-danger btn-sm" onclick="resetIdentify()">✕ New Photo</button>
-        </div>
-        <div id="sonnetBannerStep2" style="display:none;margin-top:8px"></div>
-      </div>
-    </div>
-
-    <!-- Step 3: Confirm part details -->
+    <!-- Step 3: Tatanka matching + price -->
     <div id="identStep3" style="display:none">
       <div class="card">
         <div class="card-title"><span class="ct-icon">✅</span> CONFIRM PART</div>
         <div id="confirmedPartSummary"></div>
-        <div id="tatankaPanelConfirm"></div>
       </div>
+
+      <!-- Tatanka matching — pick exact listing -->
+      <div class="card" id="tatankaMatchCard" style="display:none">
+        <div class="card-title"><span class="ct-icon">🏪</span> MATCH TO TATANKA LISTING</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Select which Tatanka listing best matches YOUR part to set the reference price:</div>
+        <div id="tatankaMatchOptions"></div>
+        <div id="tatankaNoMatch" style="display:none;font-size:12px;color:var(--muted)">No Tatanka listings found for this part number.</div>
+      </div>
+
       <div class="card">
-        <div class="card-title"><span class="ct-icon">📝</span> PART DETAILS</div>
-        <div class="row2">
-          <div class="fg">
-            <label>Box Number <span class="req">*</span></label>
-            <input type="text" id="confirmBox" placeholder="e.g. 4">
-          </div>
-          <div class="fg">
-            <label>Quantity <span class="req">*</span></label>
-            <input type="number" id="confirmQty" value="1" min="1">
-          </div>
-        </div>
-        <div class="fg">
-          <label>Condition</label>
-          <div class="condition-btns">
-            <button class="cond-btn" onclick="setCondition('good',this)">✅ Good</button>
-            <button class="cond-btn" onclick="setCondition('fair',this)">⚠️ Fair</button>
-            <button class="cond-btn" onclick="setCondition('poor',this)">❌ Poor</button>
-          </div>
-        </div>
+        <div class="card-title"><span class="ct-icon">💶</span> ASKING PRICE</div>
+        <div id="tatankaSelectedRef" style="display:none;margin-bottom:10px"></div>
         <div class="fg">
           <label>Asking Price (EUR) <span class="req">*</span></label>
           <input type="number" id="confirmPrice" placeholder="0.00" step="0.01">
         </div>
-        <div class="fg">
-          <label>Notes</label>
-          <textarea id="confirmNotes" placeholder="Optional notes..."></textarea>
-        </div>
-        <div style="display:flex; gap:8px; margin-top:4px;">
-          <button class="btn btn-secondary" onclick="backToGuesses()">← Back</button>
+        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap" id="priceShortcuts"></div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn btn-secondary" onclick="showStep(2)">← Back</button>
           <button class="btn btn-primary" style="flex:1" onclick="savePart()">💾 SAVE TO INVENTORY</button>
         </div>
       </div>
@@ -914,74 +1004,95 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
 
 <script>
 // ═══════════════════════════════════════════════════════
-// CONFIGURATION & STATE
+// CONFIGURATION
 // ═══════════════════════════════════════════════════════
+const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages';
+const API_KEY_STORAGE = 'volvo_api_key';
 
-const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
-const API_KEY_STORAGE = "volvo_api_key";
-
-let PARTS_DB = [];       // loaded from PARTS_DB.js
-let TATANKA_DB = {};     // loaded from tatanka_db.json, keyed by base_no
-let INVENTORY = [];      // user's parts
+let PARTS_DB = [];
+let TATANKA_DB = {};
+let INVENTORY = [];
 let SETTINGS = {
-  rate: 0.087,
-  discountIn: 70,
-  discountOut: 80
+  exchangeRate: 0.088,
+  discountIn: 75,
+  discountOut: 60,
+  currency: 'EUR'
 };
 
 // Identify flow state
-let currentPhoto = null;      // base64 image
-let currentPhotoBlob = null;  // compressed blob for saving
+let currentPhoto = null;
+let currentPhotoBlob = null;
+let extraAngles = [];
 let currentGuesses = [];
 let selectedGuess = null;
 let currentCondition = null;
 let identifyAttempt = 0;
 
-// ═══════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════
+// Manual entry state
+let entryMode = 'catalogue';
+let partSelected = false;
+let selectedTatankaRef = null;
 
-async function init() {
-  loadSettings();
-  loadInventory();
-  await loadTatankaDB();
-  updateHeaderStats();
-  renderInventory();
-  renderCatalogue();
-  renderSummary();
-  updateSettingsUI();
-  updateApiKeyStatus();
+// Filter state
+let invFilter = 'all';
+let catFilter = '';
+let catSearch = '';
+
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(() => t.className = 'toast', 3000);
 }
 
-function updateApiKeyStatus() {
-  const el = document.getElementById('apiKeyStatus');
-  if (!el) return;
-  const key = localStorage.getItem(API_KEY_STORAGE);
-  if (key) {
-    el.textContent = 'Set (' + key.substring(0,12) + '...)';
-    el.style.color = 'var(--green)';
-  } else {
-    el.textContent = 'Not set — tap Change to add';
-    el.style.color = 'var(--red)';
-  }
+function formatEur(eur) {
+  if (eur === null || eur === undefined) return '\u2014';
+  return eur.toFixed(2) + ' EUR';
 }
 
-async function loadTatankaDB() {
-  try {
-    const r = await fetch('tatanka_db.json');
-    if (!r.ok) throw new Error('not found');
-    const data = await r.json();
-    TATANKA_DB = {};
-    (data.products || []).forEach(p => {
-      const key = p.base_no || p.sku;
-      if (!TATANKA_DB[key]) TATANKA_DB[key] = [];
-      TATANKA_DB[key].push(p);
-    });
-    document.getElementById('settingTatankaCount').textContent = (data.products||[]).length;
-    document.getElementById('tatankaScrapeDate').textContent = data.scraped_date || '—';
-  } catch(e) {
-    console.log('tatanka_db.json not loaded:', e.message);
-  }
+function formatSek(sek) {
+  if (!sek) return '';
+  return '(' + sek.toLocaleString() + ' SEK)';
+}
+
+function formatPrice(eur, sek) {
+  if (!eur) return '<span style=\"color:var(--muted)\">Price on request</span>';
+  return '<span class=\"price-main\">' + formatEur(eur) + '</span> <span class=\"price-ref\">' + formatSek(sek) + '</span>';
+}
+
+function sekToEur(sek) {
+  if (!sek) return null;
+  return Math.round(sek * SETTINGS.rate * 100) / 100;
+}
+
+function getConditionBadge(cond) {
+  if (!cond) return '';
+  const map = {
+    good: '<span class=\"badge badge-green\">\u2705 Good</span>',
+    fair: '<span class=\"badge badge-yellow\">\u26a0\ufe0f Fair</span>',
+    poor: '<span class=\"badge badge-red\">\u274c Poor</span>',
+  };
+  return map[cond] || '';
+}
+
+function getStatusBadge(status) {
+  const map = {
+    available: '<span class=\"badge badge-green\">\u25cf Available</span>',
+    listed: '<span class=\"badge badge-blue\">\u25cf Listed</span>',
+    sold: '<span class=\"badge badge-muted\">\u2713 Sold</span>',
+  };
+  return map[status] || '<span class=\"badge badge-green\">\u25cf Available</span>';
+}
+
+function getStockBadge(stock) {
+  const map = {
+    'in_stock': '<span class=\"badge badge-green\">\u2705 In Stock</span>',
+    'few_left': '<span class=\"badge badge-yellow\">\u26a0\ufe0f Few Left</span>',
+    'temp_finished': '<span class=\"badge badge-orange\">\u23f3 Temp Out</span>',
+    'out_of_stock': '<span class=\"badge badge-red\">\u274c Out of Stock</span>',
+  };
+  return map[stock] || '<span class=\"badge badge-muted\">? Unknown</span>';
 }
 
 function loadSettings() {
@@ -999,10 +1110,85 @@ function saveSetting(key, val) {
   renderSummary();
 }
 
+function getApiKey() {
+  let key = localStorage.getItem(API_KEY_STORAGE);
+  if (!key) {
+    key = prompt('Enter your Anthropic API key (stored locally, never sent anywhere else):');
+    if (key) localStorage.setItem(API_KEY_STORAGE, key.trim());
+  }
+  return key;
+}
+
+function saveApiKey(callback) {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val || !val.startsWith('sk-')) {
+    showToast('Invalid key — should start with sk-', 'error');
+    return;
+  }
+  localStorage.setItem(API_KEY_STORAGE, val);
+  closeModal();
+  showToast('API key saved ✓', 'success');
+  updateApiKeyStatus();
+  if (callback === 'analyze') analyzePhoto();
+}
+
+function clearApiKey() {
+  localStorage.removeItem(API_KEY_STORAGE);
+  showToast('API key cleared', 'success');
+}
+
+function promptApiKey(callback) {
+  const body = document.getElementById('modalBody');
+  body.innerHTML = `
+    <div class="modal-title">🔑 API KEY REQUIRED</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+      Enter your Anthropic API key to enable photo identification.<br>
+      It is stored only on this device and never shared.
+    </div>
+    <div class="fg">
+      <label>Anthropic API Key</label>
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+    </div>
+    <div style="margin-top:4px;margin-bottom:16px">
+      <a href="https://console.anthropic.com/keys" target="_blank" 
+         style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--blue)">
+        Get your key at console.anthropic.com →
+      </a>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveApiKey('${callback}')">SAVE & CONTINUE</button>
+    </div>`;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
 function updateSettingsUI() {
   document.getElementById('settingRate').value = SETTINGS.rate;
   document.getElementById('settingDiscountIn').value = SETTINGS.discountIn;
   document.getElementById('settingDiscountOut').value = SETTINGS.discountOut;
+}
+
+function updateApiKeyStatus() {
+  const el = document.getElementById('apiKeyStatus');
+  if (!el) return;
+  const key = localStorage.getItem(API_KEY_STORAGE);
+  if (key) {
+    el.style.display = 'none';
+  } else {
+    el.innerHTML = '<span style="color:var(--red)">⚠️ No API key</span>';
+  }
+}
+
+async function init() {
+  loadSettings();
+  loadInventory();
+  await loadTatankaDB();
+  updateHeaderStats();
+  renderInventory();
+  renderCatalogue();
+  renderSummary();
+  updateSettingsUI();
+  updateApiKeyStatus();
 }
 
 function loadInventory() {
@@ -1015,59 +1201,27 @@ function saveInventory() {
   updateHeaderStats();
 }
 
-// ═══════════════════════════════════════════════════════
-// NAVIGATION
-// ═══════════════════════════════════════════════════════
-
-function showScreen(name) {
-  // Hide all screens
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-
-  // Show target screen
-  const screenEl = document.getElementById('screen-' + name);
-  if (!screenEl) { console.error('No screen:', name); return; }
-  screenEl.classList.add('active');
-
-  // Update nav — bulk has no nav button, highlight identify instead
-  const navMap = { bulk: 'identify' };
-  const navName = navMap[name] || name;
-  const navEl = document.getElementById('nav-' + navName);
-  if (navEl) navEl.classList.add('active');
-
-  document.querySelector('.main').scrollTop = 0;
-  if (name === 'inventory') renderInventory();
-  if (name === 'summary') renderSummary();
-  if (name === 'catalogue') renderCatalogue();
-}
-
-// ═══════════════════════════════════════════════════════
-// HELPERS: PRICING
-// ═══════════════════════════════════════════════════════
-
-function sekToEur(sek) {
-  if (!sek) return null;
-  return Math.round(sek * SETTINGS.rate * 100) / 100;
-}
-
-function formatEur(eur) {
-  if (eur === null || eur === undefined) return '—';
-  return eur.toFixed(2) + ' EUR';
-}
-
-function formatSek(sek) {
-  if (!sek) return '';
-  return '(' + sek.toLocaleString() + ' SEK)';
-}
-
-function formatPrice(eur, sek) {
-  if (!eur) return '<span style="color:var(--muted)">Price on request</span>';
-  return '<span class="price-main">' + formatEur(eur) + '</span> <span class="price-ref">' + formatSek(sek) + '</span>';
+async function loadTatankaDB() {
+  try {
+    const r = await fetch('tatanka_db.json');
+    if (!r.ok) throw new Error('not found');
+    const data = await r.json();
+    TATANKA_DB = {};
+    (data.products || []).forEach(p => {
+      const key = p.base_no || p.sku;
+      if (!TATANKA_DB[key]) TATANKA_DB[key] = [];
+      TATANKA_DB[key].push(p);
+    });
+    document.getElementById('settingTatankaCount').textContent = (data.products||[]).length;
+    document.getElementById('tatankaScrapeDate').textContent = data.scraped_date || '\u2014';
+  } catch(e) {
+    console.log('tatanka_db.json not loaded:', e.message);
+  }
 }
 
 function getTatankaData(partNo) {
   if (!partNo) return [];
-  const base = partNo.replace(/-\d$/, '').replace(/-/, '');
+  const base = partNo.replace(/-\\\\d$/, '').replace(/-/, '');
   const base2 = partNo.split('-')[0];
   return TATANKA_DB[base] || TATANKA_DB[base2] || TATANKA_DB[partNo] || [];
 }
@@ -1085,60 +1239,33 @@ function getSuggestedPrice(tatankaItems) {
   return Math.round(eur * (discount / 100) * 100) / 100;
 }
 
-function getStockBadge(stock) {
-  const map = {
-    'in_stock': '<span class="badge badge-green">✅ In Stock</span>',
-    'few_left': '<span class="badge badge-yellow">⚠️ Few Left</span>',
-    'temp_finished': '<span class="badge badge-orange">⏳ Temp Out</span>',
-    'out_of_stock': '<span class="badge badge-red">❌ Out of Stock</span>',
-  };
-  return map[stock] || '<span class="badge badge-muted">? Unknown</span>';
+async function compressImage(file, maxWidth=1200, quality=0.85) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let w = img.naturalWidth, h = img.naturalHeight;
+        if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        canvas.toBlob(blob => {
+          const fr2 = new FileReader();
+          fr2.onload = () => {
+            const b64 = fr2.result.split(",")[1];
+            resolve({ b64, blob, dataUrl: fr2.result });
+          };
+          fr2.readAsDataURL(blob);
+        }, "image/jpeg", quality);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
-
-function getConditionBadge(cond) {
-  if (!cond) return '';
-  const map = {
-    good: '<span class="badge badge-green">✅ Good</span>',
-    fair: '<span class="badge badge-yellow">⚠️ Fair</span>',
-    poor: '<span class="badge badge-red">❌ Poor</span>',
-  };
-  return map[cond] || '';
-}
-
-function getStatusBadge(status) {
-  const map = {
-    available: '<span class="badge badge-green">● Available</span>',
-    listed: '<span class="badge badge-blue">● Listed</span>',
-    sold: '<span class="badge badge-muted">✓ Sold</span>',
-  };
-  return map[status] || '<span class="badge badge-green">● Available</span>';
-}
-
-// ═══════════════════════════════════════════════════════
-// HEADER STATS
-// ═══════════════════════════════════════════════════════
-
-function updateHeaderStats() {
-  const active = INVENTORY.filter(i => i.status !== 'sold' && !i.isUnknown);
-  const boxes = new Set(active.map(i => i.box)).size;
-  document.getElementById('hPartCount').textContent = active.length;
-  document.getElementById('hBoxCount').textContent = boxes;
-  document.getElementById('settingInvCount').textContent = INVENTORY.length;
-  if (typeof PARTS_DB !== 'undefined') {
-    document.getElementById('settingPartCount').textContent = PARTS_DB.length;
-  }
-}
-
-// ═══════════════════════════════════════════════════════
-// PHOTO HANDLING
-// ═══════════════════════════════════════════════════════
-
-document.getElementById('cameraInput').addEventListener('change', handlePhoto);
-document.getElementById('galleryInput').addEventListener('change', handlePhoto);
-document.getElementById('angleInput').addEventListener('change', handleAnglePhoto);
-
-// Extra angles storage
-let extraAngles = []; // array of base64 strings
 
 async function handleAnglePhoto(e) {
   const file = e.target.files[0];
@@ -1151,7 +1278,7 @@ async function handleAnglePhoto(e) {
   extraAngles.push(compressed.b64);
   renderAngleStrip();
   e.target.value = '';
-  showToast('Angle ' + (extraAngles.length + 1) + ' added ✓', 'success');
+  showToast('Angle ' + (extraAngles.length + 1) + ' added \u2713', 'success');
 }
 
 function renderAngleStrip() {
@@ -1162,9 +1289,9 @@ function renderAngleStrip() {
   }
   strip.style.display = 'flex';
   strip.innerHTML = extraAngles.map((b64, i) =>
-    `<div style="position:relative">
-      <img src="data:image/jpeg;base64,${b64}" style="width:64px;height:64px;border-radius:6px;object-fit:cover;border:1px solid var(--accent)">
-      <button onclick="removeAngle(${i})" style="position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;padding:0;line-height:18px">✕</button>
+    `<div style=\"position:relative\">
+      <img src=\"data:image/jpeg;base64,${b64}\" style=\"width:64px;height:64px;border-radius:6px;object-fit:cover;border:1px solid var(--accent)\">
+      <button onclick=\"removeAngle(${i})\" style=\"position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;padding:0;line-height:18px\">\u2715</button>
     </div>`
   ).join('');
 }
@@ -1177,381 +1304,94 @@ function removeAngle(i) {
 async function handlePhoto(e) {
   const file = e.target.files[0];
   if (!file) return;
-
-  try {
-    const compressed = await compressImage(file, 1200, 0.85);
-    currentPhoto = compressed.b64;
-    currentPhotoBlob = compressed.blob;
-
-    const photoArea = document.getElementById('photoArea');
-    // Remove onclick before setting innerHTML so we don't lose the handler
-    photoArea.removeAttribute('onclick');
-    photoArea.classList.add('has-photo');
-    photoArea.innerHTML = '<img src="' + compressed.dataUrl + '" alt="Part photo" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">';
-    // Re-attach tap-to-retake
-    photoArea.onclick = () => document.getElementById('cameraInput').click();
-
-    document.getElementById('analyzeBtn').disabled = false;
-    document.getElementById('addAngleBtn').style.display = 'inline-flex';
-    showToast('Photo ready ✓', 'success');
-  } catch(err) {
-    showToast('Photo load failed: ' + err.message, 'error');
-  }
-
-  // Reset input so same file can be selected again on iOS
-  setTimeout(() => { e.target.value = ''; }, 100);
+  const compressed = await compressImage(file, 1200, 0.85);
+  currentPhoto = compressed.b64;
+  currentPhotoBlob = compressed.blob;
+  const photoArea = document.getElementById('photoArea');
+  photoArea.classList.add('has-photo');
+  photoArea.innerHTML = '<img src=\"' + compressed.dataUrl + '\" alt=\"Part photo\">';
+  document.getElementById('analyzeBtn').disabled = false;
+  document.getElementById('addAngleBtn').style.display = 'inline-flex';
+  e.target.value = '';
 }
 
-async function compressImage(file, maxWidth, quality) {
-  return new Promise(resolve => {
-    const img = new Image();
-    const reader = new FileReader();
-    reader.onload = e => {
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let w = img.width, h = img.height;
-        if (w > maxWidth) { h = h * maxWidth / w; w = maxWidth; }
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        canvas.toBlob(blob => {
-          const reader2 = new FileReader();
-          reader2.onload = e2 => {
-            const dataUrl = e2.target.result;
-            resolve({
-              b64: dataUrl.split(',')[1],
-              blob: blob,
-              dataUrl: dataUrl
-            });
-          };
-          reader2.readAsDataURL(blob);
-        }, 'image/jpeg', quality);
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+// PHOTO HANDLING
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 
-// ═══════════════════════════════════════════════════════
-// AI ANALYSIS
-// ═══════════════════════════════════════════════════════
+document.getElementById('cameraInput').addEventListener('change', handlePhoto);
+document.getElementById('galleryInput').addEventListener('change', handlePhoto);
+document.getElementById('angleInput').addEventListener('change', handleAnglePhoto);
 
+function showScreen(name) {
+  // Hide all screens
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
-// ═══════════════════════════════════════════════════════
-// SMART PART NUMBER DETECTION
-// ═══════════════════════════════════════════════════════
+  // Show target screen
+  const screenEl = document.getElementById('screen-' + name);
+  if (!screenEl) { console.error('No screen:', name); return; }
+  screenEl.classList.add('active');
 
-const GROUP_VOCABULARY = {
-  '20,21,22,23,25,26,27': 'engine block, cylinder head, crankshaft, camshaft, piston, connecting rod, oil pan, oil pump, water pump, thermostat, radiator hose, air filter, carburettor, fuel pump, fuel tank, exhaust manifold, intake manifold, fan belt',
-  '31,32,33,34,35,36,37,38,39': 'battery, alternator, starter motor, ignition coil, distributor, spark plug, fuse, relay, wiring harness, headlamp, tail lamp, switch, instrument panel, speedometer, temperature gauge',
-  '41,43,45': 'clutch disc, pressure plate, release bearing, gearbox, gear lever, propeller shaft, universal joint, slip yoke, centre bearing, CV joint, driveshaft',
-  '46,48': 'front axle, rear axle, hub, wheel bearing, stub axle, half shaft, power takeoff, PTO shaft',
-  '51,52,55,58': 'brake drum, brake disc, brake pad, brake shoe, brake caliper, master cylinder, wheel cylinder, brake pipe, brake hose, handbrake cable, parking brake',
-  '61,64': 'steering gear, steering rod, drag link, track rod, tie rod end, steering arm, pitman arm, steering column',
-  '71,72,73,77': 'chassis frame, leaf spring, coil spring, shock absorber, spring shackle, radius arm, wheel rim, lug nut, tyre',
-  '81,83,84,85,86,87,88': 'cab body, door, door lock, hinge, windscreen, side window, seat, seat belt, heating unit, heater hose, mudflap, spare wheel holder',
-};
-
-async function detectPartNumber(photoB64, groupFilter) {
-  // Quick OCR prompt — much shorter/faster than full identification
-  const apiKey = getApiKey();
-  if (!apiKey) return null;
-  if (typeof PARTS_DB === 'undefined' || PARTS_DB.length === 0) return null;
-
-  try {
-    const resp = await fetch(ANTHROPIC_API, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 100,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: photoB64 } },
-            { type: 'text', text: 'Look carefully at ALL text visible in this image — on labels, boxes, stamped metal, stickers, or written anywhere. Find any part number (Volvo part numbers: 4-7 digits, optionally followed by a letter like B or a dash+digit, e.g. 681609-4, 461537-3, 262257B). Return ONLY the part number if clearly visible, or NONE if not found. Do not guess — only report what you can actually read.' }
-          ]
-        }]
-      })
-    });
-    const data = await resp.json();
-    const raw = (data.content||[]).map(b=>b.text||'').join('').trim();
-
-    if (!raw || raw === 'NONE' || raw.toLowerCase().includes('none')) return null;
-
-    // Extract part number patterns — handles: 461537-3, 262257B, 681609-4, 461087
-    // Volvo C3 patterns: digits with optional -digit suffix OR digits with B/A suffix
-    const patterns = [
-      /\d{5,7}-\d/g,      // 461537-3 style
-      /\d{5,7}[A-Z]/g,    // 262257B style  
-      /\d{5,7}/g,          // plain number
-      /\d{4,6}-\d/g,      // shorter with suffix
-    ];
-    let detected = null;
-    for (const pat of patterns) {
-      const m = raw.match(pat);
-      if (m) { detected = m[0]; break; }
-    }
-    if (!detected) return null;
-
-    // Look up in PARTS_DB — try several matching strategies
-    let filteredDB = PARTS_DB;
-    if (groupFilter) {
-      const groups = groupFilter.split(',');
-      filteredDB = PARTS_DB.filter(p => groups.includes(p.g));
-    }
-
-    // Normalise: strip B/A suffix and dash-digit for base comparison
-    const baseDetected = detected.replace(/[A-Z]$/, '').replace(/-\d$/, '');
-
-    let dbMatch = filteredDB.find(p => p.no === detected) ||
-                  filteredDB.find(p => p.no.replace(/[A-Z]$/, '').replace(/-\d$/, '') === baseDetected) ||
-                  filteredDB.find(p => p.no.startsWith(baseDetected));
-
-    if (!dbMatch) return null;
-
-    const tatanka = getTatankaData(dbMatch.no);
-    showToast('📷 Part number detected: ' + detected, 'success');
-    return {
-      name: dbMatch.name,
-      sv: dbMatch.sv,
-      no: dbMatch.no,
-      group: dbMatch.g,
-      confidence: 99,
-      reason: 'Part number ' + detected + ' read directly from the part/packaging',
-      detectedNo: detected,
-      tatanka: tatanka,
-      fromOCR: true
-    };
-  } catch(e) {
-    console.log('OCR detection failed, falling back to full AI:', e.message);
-    return null;
+function updateHeaderStats() {
+  const active = INVENTORY.filter(i => i.status !== 'sold' && !i.isUnknown);
+  const boxes = new Set(active.map(i => i.box)).size;
+  document.getElementById('hPartCount').textContent = active.length;
+  document.getElementById('hBoxCount').textContent = boxes;
+  document.getElementById('settingInvCount').textContent = INVENTORY.length;
+  if (typeof PARTS_DB !== 'undefined') {
+    document.getElementById('settingPartCount').textContent = PARTS_DB.length;
   }
 }
+  const navMap = { bulk: 'identify' };
+  const navName = navMap[name] || name;
+  const navEl = document.getElementById('nav-' + navName);
+  if (navEl) navEl.classList.add('active');
 
-async function analyzePhoto(useSonnet = false) {
-  const apiKey = getApiKey();
-  if (!apiKey) { promptApiKey('analyze'); return; }
+  document.querySelector('.main').scrollTop = 0;
+  if (name === 'inventory') renderInventory();
+  if (name === 'summary') renderSummary();
+  if (name === 'catalogue') renderCatalogue();
+}
 
-  document.getElementById('analyzeBtn').disabled = true;
-  document.getElementById('analyzeSpinner').style.display = 'inline-block';
-  document.getElementById('analyzeBtnText').textContent = useSonnet ? 'ANALYZING WITH SONNET...' : 'ANALYZING...';
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+// HELPERS: PRICING
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 
-  const groupFilter = document.getElementById('groupFilter').value;
-  const model = useSonnet ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001';
+function tryLoadPartsDB() {
+  if (typeof window.PARTS_DB_DATA !== 'undefined' && window.PARTS_DB_DATA.length > 0) {
+    PARTS_DB = window.PARTS_DB_DATA;
+    console.log('PARTS_DB loaded:', PARTS_DB.length, 'parts');
+    return true;
+  }
+  return false;
+}
 
-  // ── SMART PART NUMBER DETECTION (skip AI if number readable) ──
-  if (!useSonnet) {
-    const quickMatch = await detectPartNumber(currentPhoto, groupFilter);
-    if (quickMatch) {
-      currentGuesses = [quickMatch];
-      identifyAttempt = 0;
-      showStep(2);
-      renderGuesses([quickMatch]);
-      document.getElementById('analyzeSpinner').style.display = 'none';
-      document.getElementById('analyzeBtnText').textContent = '🔍 ANALYZE PHOTO';
-      document.getElementById('analyzeBtn').disabled = false;
-      return;
+function bootApp() {
+  tryLoadPartsDB();
+  init();
+  // Re-check after a short delay in case PARTS_DB.js loaded late
+  setTimeout(() => {
+    if (PARTS_DB.length === 0 && tryLoadPartsDB()) {
+      console.log('PARTS_DB late-loaded, refreshing UI');
+      renderCatalogue();
+      updateHeaderStats();
     }
-  }
+  }, 500);
+}
 
-  // ── BUILD GROUP VOCABULARY CONTEXT (improvement 3) ──
-  let vocabContext = '';
-  if (groupFilter && GROUP_VOCABULARY[groupFilter]) {
-    vocabContext = `Parts in this system include: ${GROUP_VOCABULARY[groupFilter]}.`;
-  }
-
-  const images = [
-    { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: currentPhoto } },
-    ...extraAngles.map(b64 => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } }))
-  ];
-  const photoCount = images.length;
-
-  try {
-    // ── STAGE 1: Visual description (improvement 1) ──
-    document.getElementById('analyzeBtnText').textContent = useSonnet ? 'STAGE 1/2 SONNET...' : 'STAGE 1/2...';
-
-    const descPrompt = `You are an expert mechanic specialising in Volvo C3 series military vehicles (C303, C304, C306, TGB 11/13/20).
-Look at ${photoCount > 1 ? 'these ' + photoCount + ' photos of the same part from different angles' : 'this photo of a part'}.
-
-FIRST: Read any text, numbers, markings, or part numbers visible anywhere in the image(s).
-THEN: Describe what you see physically — shape, size, material, connections, notable features.
-
-Return ONLY JSON:
-{"visible_text":"any text/numbers you can read, or empty string","part_type":"e.g. propeller shaft, brake disc, fuel pump","material":"steel/rubber/aluminium/etc","connections":"e.g. universal joint at both ends","notable":"any distinctive features","system":"which vehicle system: engine/transmission/brakes/suspension/steering/electrical/body"}`;
-
-    const descResp = await fetch(ANTHROPIC_API, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: model,
-        max_tokens: 300,
-        messages: [{ role: 'user', content: [...images, { type: 'text', text: descPrompt }] }]
-      })
-    });
-    if (!descResp.ok) throw new Error('API error ' + descResp.status);
-    const descData = await descResp.json();
-    let descText = (descData.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
-    const descMatch = descText.match(/\{[\s\S]*\}/);
-    let description = {};
-    if (descMatch) { try { description = JSON.parse(descMatch[0]); } catch(e) {} }
-
-    // Store description for display
-    window._lastDescription = description;
-
-    // ── STAGE 2: Part identification with description context ──
-    document.getElementById('analyzeBtnText').textContent = useSonnet ? 'STAGE 2/2 SONNET...' : 'STAGE 2/2...';
-
-    // Build candidate list from PARTS_DB filtered by detected system
-    let candidates = '';
-    if (typeof PARTS_DB !== 'undefined' && PARTS_DB.length > 0) {
-      let pool = PARTS_DB;
-      if (groupFilter) {
-        const groups = groupFilter.split(',');
-        pool = pool.filter(p => groups.includes(p.g));
-      } else if (description.system) {
-        // Auto-filter by detected system
-        const sysMap = {
-          'engine': ['20','21','22','23','25','26','27'],
-          'transmission': ['41','43','45','46','48'],
-          'brakes': ['51','52','55','58'],
-          'suspension': ['71','72','73','77'],
-          'steering': ['61','64'],
-          'electrical': ['31','32','33','34','35','36','37','38','39'],
-          'body': ['81','83','84','85','86','87','88'],
-        };
-        const sys = description.system.toLowerCase();
-        for (const [key, groups] of Object.entries(sysMap)) {
-          if (sys.includes(key)) { pool = pool.filter(p => groups.includes(p.g)); break; }
-        }
-      }
-      // Keyword-rank candidates: parts matching the visual description float to top
-      const descKeywords = [
-        description.part_type, description.system, description.connections, description.notable
-      ].filter(Boolean).join(' ').toLowerCase().split(/\s+/).filter(w => w.length > 3);
-
-      const scoredPool = pool.map(p => {
-        let score = 0;
-        const haystack = (p.name + ' ' + p.sv).toLowerCase();
-        for (const kw of descKeywords) {
-          if (haystack.includes(kw)) score += 10;
-          if (kw.length > 4 && haystack.includes(kw.slice(0, -1))) score += 5;
-        }
-        return { p, score };
-      }).sort((a, b) => b.score - a.score);
-
-      const topRelevant = scoredPool.filter(x => x.score > 0).slice(0, 30).map(x => x.p);
-      const rest = scoredPool.filter(x => x.score === 0).slice(0, 30).map(x => x.p);
-      const sample = [...topRelevant, ...rest];
-
-      const relevantNote = topRelevant.length > 0 ? '\\n\\nMost relevant C3 parts (ranked by match):\\n' : '\\n\\nKnown C3 parts in this system:\\n';
-      candidates = relevantNote + sample.map(p => p.no + ': ' + p.name + ' (' + p.sv + ')').join('\\n');
-    }
-
-    const idPrompt = `You are an expert mechanic and parts specialist for Volvo C3 series military vehicles (C303, C304, C306, TGB 11/13/20).
-
-A part has been visually identified as:
-- Type: ${description.part_type || 'unknown'}
-- Material: ${description.material || 'unknown'}
-- Connections/ends: ${description.connections || 'unknown'}
-- Notable features: ${description.notable || 'none'}
-- Visible text: ${description.visible_text || 'none'}
-- Vehicle system: ${description.system || 'unknown'}
-${vocabContext ? '- System vocabulary: ' + vocabContext : ''}
-${candidates}
-
-TASK: Give the 3 most likely part numbers from the Volvo C3 catalogue.
-
-REASONING RULES:
-1. If you recognise the part type clearly, list ALL catalogue variants of that type as your 3 guesses — do not fixate on one specific variant.
-2. For PEDALS specifically: the C3 has 3 pedals that look very similar. Distinguish them by:
-   - Clutch pedal (kopplingspedalarm): leftmost, typically longest arm, connects to clutch linkage
-   - Brake pedal (bromspedalarm): middle, often widest footpad, connects to brake servo/master cylinder
-   - Accelerator pedal (gaspedalarm): rightmost, often narrowest/lightest, connects to throttle rod
-   When unsure which pedal, list all 3 variants as your guesses ranked by probability.
-3. For visually similar parts (pedals, brackets, levers), your 3 guesses should be the 3 most likely VARIANTS of that type — not 3 different part types.
-4. A pedal = look for pedalarm, koppling, broms, gas in the list. A bracket = fäste, konsol. A seal = tätning, packning.
-5. If the exact part is not in the candidate list, use your Volvo C3 knowledge to suggest the most likely number — do NOT return "unable to identify".
-6. Always return 3 guesses. A 40% guess is more useful than giving up.
-7. For parts with clear function (pedal, pump, valve, filter), confidence should be at least 50%.
-${description.visible_text ? '6. PRIORITY: visible text "' + description.visible_text + '" — if this is a part number, use it with confidence 95+.' : ''}
-
-Return ONLY a JSON array (best match first):
-[{"name":"English name","sv":"Swedish name","no":"part number e.g. 644768","group":"group number e.g. 41","confidence":75,"reason":"one sentence — name the specific visual feature that led to this guess"}]
-Confidence: 90-100=part number read, 70-89=certain type+strong catalogue match, 50-69=probable, 30-49=uncertain, below 30=weak guess.
-Return ONLY the JSON array.`;
-
-    const idResp = await fetch(ANTHROPIC_API, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: model,
-        max_tokens: 600,
-        messages: [{ role: 'user', content: [{ type: 'text', text: idPrompt }] }]
-      })
-    });
-    if (!idResp.ok) throw new Error('API error ' + idResp.status);
-    const idData = await idResp.json();
-    let idText = (idData.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
-    window._lastApiResponse = idText;
-
-    const jsonMatch = idText.match(/\[\s*\{[\s\S]*\}\s*\]/);
-    if (!jsonMatch) throw new Error('No JSON array found in response');
-    let guesses = JSON.parse(jsonMatch[0]);
-    if (!Array.isArray(guesses)) throw new Error('Not array');
-    guesses = guesses.filter(g => g && (g.name || g.no));
-    if (guesses.length === 0) throw new Error('No valid guesses in response');
-
-    // Enrich with PARTS_DB + Tatanka
-    guesses = guesses.map(g => {
-      const dbMatch = typeof PARTS_DB !== 'undefined' ?
-        PARTS_DB.find(p => p.no === g.no || p.no.split('-')[0] === g.no.split('-')[0]) : null;
-      if (dbMatch) { g.name=g.name||dbMatch.name; g.sv=g.sv||dbMatch.sv; g.no=g.no||dbMatch.no; g.group=g.group||dbMatch.g; }
-      g.tatanka = getTatankaData(g.no);
-      return g;
-    });
-
-    // Attach description for display
-    guesses._description = description;
-    currentGuesses = guesses;
-    identifyAttempt = 0;
-    showStep(2);
-    renderGuesses(guesses, description, useSonnet);
-
-  } catch(err) {
-    console.error('Analysis error:', err);
-    let msg = err.message;
-    if (window._lastApiResponse) msg += ' | ' + window._lastApiResponse.substring(0, 80);
-    showToast('Analysis failed: ' + msg, 'error');
-    document.getElementById('analyzeBtn').disabled = false;
-  }
-
-  document.getElementById('analyzeSpinner').style.display = 'none';
-  document.getElementById('analyzeBtnText').textContent = '🔍 ANALYZE PHOTO';
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootApp);
+} else {
+  bootApp();
 }
 
 
-// Disambiguation widget — shown when AI sees a known ambiguous category
+function confLabel() { console.warn("confLabel not implemented"); }
+
 function disambigWidget(desc) {
   if (!desc || !desc.part_type) return '';
   const type = desc.part_type.toLowerCase();
-
-  // Pedal disambiguation
   if (type.includes('pedal')) {
     return `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
       <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:6px">WHICH PEDAL?</div>
@@ -1562,9 +1402,7 @@ function disambigWidget(desc) {
       </div>
     </div>`;
   }
-
-  // Hose disambiguation
-  if (type.includes('hose') || type.includes('pipe') || type.includes('slang')) {
+  if (type.includes('hose') || type.includes('pipe')) {
     return `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
       <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:6px">WHICH SYSTEM?</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -1575,9 +1413,7 @@ function disambigWidget(desc) {
       </div>
     </div>`;
   }
-
-  // Spring disambiguation
-  if (type.includes('spring') || type.includes('fjäder')) {
+  if (type.includes('spring')) {
     return `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
       <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:6px">WHICH SYSTEM?</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -1587,14 +1423,94 @@ function disambigWidget(desc) {
       </div>
     </div>`;
   }
-
   return '';
 }
 
+
+// ═══════════════════════════════════════════════════════
+// SYNONYM SEARCH ENGINE (used by catalogue + smart search)
+// ═══════════════════════════════════════════════════════
+
+const SEARCH_SYNONYMS = {
+  'screw':['screw','skruv','bolt','bult'],'bolt':['bolt','bult','screw','skruv'],
+  'nut':['nut','mutter'],'washer':['washer','bricka','ring'],
+  'gasket':['gasket','packning','seal','tätning'],'seal':['seal','tätning','gasket','packning','o-ring'],
+  'bearing':['bearing','lager','kullager'],'filter':['filter','insats','filterinsats'],
+  'hose':['hose','slang','pipe','rör'],'pipe':['pipe','rör','hose','slang'],
+  'pump':['pump'],'valve':['valve','ventil'],'spring':['spring','fjäder'],
+  'bracket':['bracket','fäste','konsol','hållare'],'cover':['cover','lock','kåpa'],
+  'plug':['plug','plugg','lock'],'shaft':['shaft','axel'],'gear':['gear','kugghjul','växel'],
+  'cable':['cable','kabel','vajer'],'switch':['switch','brytare','kontakt'],
+  'relay':['relay','relä'],'sensor':['sensor','givare'],
+  'lamp':['lamp','lampa','bulb','glödlampa'],'bulb':['bulb','glödlampa','lamp'],
+  'brake':['brake','broms'],'clutch':['clutch','koppling'],
+  'pad':['pad','belägg'],'disc':['disc','skiva','disk'],
+  'shock':['shock','dämpare','stötdämpare'],'bushing':['bushing','bussning'],
+  'pin':['pin','tapp','pinne','stift'],'clip':['clip','klämma'],
+  'rubber':['rubber','gummi'],'belt':['belt','rem','drivrem'],
+  'tank':['tank','behållare'],'engine':['engine','motor'],
+  'radiator':['radiator','kylare'],'fan':['fan','fläkt'],
+  'steering':['steering','styrning'],'door':['door','dörr'],
+  'window':['window','ruta','glas'],'seat':['seat','säte'],
+  'exhaust':['exhaust','avgasrör','avgassystem'],'intake':['intake','inlopp','luftfilter'],
+  'oil':['oil','olja','smörj'],'fuel':['fuel','bränsle'],
+  'coolant':['coolant','kylvätska'],'battery':['battery','batteri'],
+  'alternator':['alternator','generator'],'starter':['starter','startmotor'],
+  'ignition':['ignition','tändning','tändspole'],'axle':['axle','axel','nav'],
+  'wheel':['wheel','hjul','fälg'],'tire':['tire','tyre','däck'],
+  'suspension':['suspension','fjädring','upphängning'],'frame':['frame','ram'],
+  'bumper':['bumper','stötfångare'],'body':['body','karosseri'],
+  'heating':['heating','värme'],'wiring':['wiring','ledning','kablar'],
+  'fuse':['fuse','säkring'],'kit':['kit','sats','set'],
+  'plate':['plate','plåt','platta'],'clamp':['clamp','klämma','clips'],
+  'stud':['stud','pinnbult','pinnskruv'],'ring':['ring','bricka','tätningsring'],
+  'bush':['bush','bussning'],'cap':['cap','lock','huv'],
+  'arm':['arm','länk','stag'],'rod':['rod','stag','stång'],
+  'link':['link','länk','stag'],'joint':['joint','led','knut'],
+  'pedal':['pedal','pedalen'],'rim':['rim','fälg','hjul'],
+  'coil':['coil','spole','tändspole'],'carb':['carb','carburetor','förgasare'],
+  'carburetor':['carburetor','carb','förgasare'],'piston':['piston','kolv'],
+  'cylinder':['cylinder','cylindrar'],'head':['head','cylinder head','topplock'],
+  'gasket':['gasket','packning'],'timing':['timing','distribution','kamkedja'],
+};
+
+function expandSearchTerms(query) {
+  const words = query.toLowerCase().trim().split(/\s+/);
+  const allTerms = new Set(words);
+  for (const word of words) {
+    if (SEARCH_SYNONYMS[word]) SEARCH_SYNONYMS[word].forEach(s => allTerms.add(s));
+    // Plural/gerund stripping
+    if (word.endsWith('s') && word.length > 3) allTerms.add(word.slice(0,-1));
+    if (word.endsWith('es') && word.length > 4) allTerms.add(word.slice(0,-2));
+    if (word.endsWith('ing') && word.length > 5) allTerms.add(word.slice(0,-3));
+  }
+  return [...allTerms];
+}
+
+function searchScore(part, terms) {
+  let score = 0;
+  const name = (part.name||'').toLowerCase();
+  const sv   = (part.sv||'').toLowerCase();
+  const no   = (part.no||'').toLowerCase();
+  const g    = (part.g||'').toLowerCase();
+  for (const term of terms) {
+    if (no === term)          { score += 100; continue; }
+    if (no.startsWith(term))  { score += 60;  continue; }
+    if (no.includes(term))    { score += 40;  continue; }
+    const nameWords = name.split(/\s+/);
+    if (nameWords[0] === term)           { score += 50; continue; } // first word match
+    if (nameWords.includes(term))        { score += 35; continue; }
+    if (name.startsWith(term))           { score += 30; continue; }
+    if (name.includes(term))             { score += 20; continue; }
+    if (sv.includes(term))               { score += 10; continue; }
+    if (g.includes(term))                { score += 5;  continue; }
+  }
+  return score;
+}
+
 function forcePartGuess(partNoBase, name, sv, group) {
-  // Look up exact part number in PARTS_DB
   const dbMatch = typeof PARTS_DB !== 'undefined'
-    ? PARTS_DB.find(p => p.no.replace(/-\d$/, '').replace(/[A-Z]$/, '') === partNoBase || p.no.startsWith(partNoBase))
+    ? PARTS_DB.find(p => p.no.replace(/-\d$/,'').replace(/[A-Z]$/,'') === partNoBase || p.no.startsWith(partNoBase))
     : null;
   const no = dbMatch ? dbMatch.no : partNoBase;
   const tatanka = getTatankaData(no);
@@ -1605,144 +1521,208 @@ function forcePartGuess(partNoBase, name, sv, group) {
 }
 
 function setGroupHint(group) {
-  // Set the group filter and re-analyze
   document.getElementById('groupFilter').value = group;
   showStep(1);
   showToast('Filter set — tap Analyze again', 'success');
 }
 
-function renderGuesses(guesses, description, wasSonnet) {
+function renderGuesses(guesses) {
   const container = document.getElementById('guessResults');
   if (!guesses || guesses.length === 0) {
-    container.innerHTML = '<div class="empty"><div class="empty-icon">🤷</div><div class="empty-title">NO MATCHES FOUND</div><div class="empty-text">Try a different angle or use the Unknown option.</div></div>';
+    container.innerHTML = '<div class="empty"><div class="empty-icon">\ud83e\udd37</div><div class="empty-title">NO MATCHES FOUND</div><div class="empty-text">Try a different angle or use the Unknown option.</div></div>';
     return;
   }
 
-  const desc = description || window._lastDescription || {};
-  const maxConf = Math.max(...guesses.map(g => g.confidence || 0));
-  const allLowConf = maxConf < 50;
-
-  // ── AI SEES panel (improvement 1 output) ──
-  let descPanel = '';
-  if (desc.part_type || desc.visible_text) {
-    const visText = desc.visible_text ? `<div style="margin-top:5px"><span style="color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:10px">TEXT READ:</span> <span style="font-size:12px;color:var(--green)">${desc.visible_text}</span></div>` : '';
-    descPanel = `<div style="background:var(--surface2);border:1px solid var(--border2);border-left:3px solid var(--accent);border-radius:var(--radius);padding:10px 12px;margin-bottom:12px">
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:4px;letter-spacing:1px">🤖 AI SEES</div>
-      <div style="font-size:13px;font-weight:500;color:var(--text)">${desc.part_type || ''}${desc.material ? ' · <span style="color:var(--text2)">' + desc.material + '</span>' : ''}</div>
-      ${desc.connections ? `<div style="font-size:11px;color:var(--text2);margin-top:2px">${desc.connections}</div>` : ''}
-      ${desc.notable ? `<div style="font-size:11px;color:var(--text2)">${desc.notable}</div>` : ''}
-      ${visText}
-      ${disambigWidget(desc)}
-    </div>`;
-  }
-
-  // ── Sonnet fallback banner (improvement 4) ──
-  let sonnetBanner = '';
-  if (allLowConf && !wasSonnet) {
-    sonnetBanner = `<div style="background:rgba(232,184,75,0.08);border:1px solid var(--accent);border-radius:var(--radius);padding:12px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
-      <div style="flex:1">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);font-weight:600">LOW CONFIDENCE — Best: ${maxConf}%</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:3px">Haiku is uncertain. Try Sonnet for deeper analysis (slower, ~10× cost).</div>
-      </div>
-      <button onclick="analyzePhoto(true)" style="background:var(--accent);color:#000;border:none;border-radius:6px;padding:8px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">TRY SONNET →</button>
-    </div>`;
-  } else if (wasSonnet) {
-    sonnetBanner = `<div style="background:rgba(82,199,122,0.08);border:1px solid var(--green);border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--green)">✦ SONNET ANALYSIS</div>`;
-  }
-
-  // ── Tatanka visual candidates (improvement 2) ──
-  // Find Tatanka products that visually match based on part type keywords
-  let tatankaVisuals = '';
-  if (desc.part_type && typeof TATANKA_DB !== 'undefined') {
-    const keywords = desc.part_type.toLowerCase().split(/\s+/);
-    const matches = Object.values(TATANKA_DB)
-      .filter(t => t.image_local && keywords.some(k =>
-        k.length > 3 && (t.name||'').toLowerCase().includes(k)))
-      .slice(0, 4);
-    if (matches.length > 0) {
-      tatankaVisuals = `<div style="margin-bottom:12px">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:6px;letter-spacing:1px">SIMILAR PARTS ON TATANKA</div>
-        <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">
-          ${matches.map(t => `<div style="flex-shrink:0;text-align:center;cursor:pointer" onclick="selectTatankaCandidate('${t.base_no}')">
-            <img src="${t.image_local}" style="width:56px;height:56px;border-radius:6px;object-fit:cover;border:1px solid var(--border)">
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);margin-top:2px;width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.name}</div>
-          </div>`).join('')}
-        </div>
-      </div>`;
-    }
-  }
-
-  // ── Confidence label helper (improvement 5) ──
-  function confLabel(c) {
-    if (c >= 90) return { label: 'CERTAIN', color: 'var(--green)' };
-    if (c >= 70) return { label: 'LIKELY',  color: 'var(--green)' };
-    if (c >= 50) return { label: 'POSSIBLE', color: 'var(--accent)' };
-    if (c >= 30) return { label: 'UNCERTAIN', color: '#ff8c42' };
-    return          { label: 'GUESS',    color: 'var(--red)' };
-  }
-
-  const cards = guesses.map((g, i) => {
+  container.innerHTML = guesses.map((g, i) => {
     const tatankaItems = g.tatanka || [];
     const bestTatanka = tatankaItems.find(t => !t.is_used) || tatankaItems[0];
     const priceEur = bestTatanka ? sekToEur(bestTatanka.price_sek) : null;
-
-    // Show Tatanka reference image if available, otherwise generic icon
-    // (don't repeat the user's own photo — it adds no information)
-    const thumb = bestTatanka && bestTatanka.image_local
-      ? `<img class="guess-thumb" src="${bestTatanka.image_local}" alt="" title="Tatanka reference photo">`
-      : `<div class="guess-thumb-placeholder">🔧</div>`;
-
-    const conf = g.confidence || 0;
-    const { label, color } = confLabel(conf);
-    const isOCR = g.fromOCR;
+    const thumb = bestTatanka && bestTatanka.image_local ?
+      `<img class="guess-thumb" src="${bestTatanka.image_local}" alt="">` :
+      `<div class="guess-thumb-placeholder">\ud83d\udd27</div>`;
+    const confColor = g.confidence >= 70 ? 'var(--green)' : g.confidence >= 40 ? 'var(--accent)' : 'var(--red)';
 
     return `<div class="guess-card" onclick="selectGuess(${i},this)" id="guess${i}">
       ${thumb}
       <div class="guess-info">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
-          <div class="guess-rank">MATCH #${i+1}</div>
-          ${isOCR ? '<span style="font-family:IBM Plex Mono,monospace;font-size:9px;background:var(--green);color:#000;padding:1px 5px;border-radius:3px">SCANNED</span>' : ''}
-        </div>
+        <div class="guess-rank">MATCH #${i+1}</div>
         <div class="guess-name">${g.name || 'Unknown Part'}</div>
-        <div class="guess-no">${g.no || '—'}</div>
+        <div class="guess-no">${g.no || '\u2014'}</div>
         ${g.reason ? `<div class="guess-desc">${g.reason}</div>` : ''}
         <div class="conf-bar-wrap">
-          <div class="conf-bar"><div class="conf-fill" style="width:${conf}%;background:${color}"></div></div>
-          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:${color};font-weight:600">${conf}%</span>
-          <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:${color};margin-left:3px">${label}</span>
+          <div class="conf-bar"><div class="conf-fill" style="width:${g.confidence||0}%;background:${confColor}"></div></div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:${confColor}">${g.confidence||0}%</span>
         </div>
         <div class="guess-meta">
           ${tatankaItems.length > 0 ? getStockBadge(bestTatanka.stock) : '<span class="badge badge-muted">Not on Tatanka</span>'}
           ${priceEur ? `<span class="badge badge-green">~${formatEur(priceEur)}</span>` : ''}
-          ${bestTatanka?.image_local ? '<span class="badge badge-muted" style="font-size:9px">📸 ref photo</span>' : ''}
         </div>
       </div>
     </div>`;
   }).join('');
-
-  container.innerHTML = descPanel + sonnetBanner + tatankaVisuals + cards;
 }
-
-function selectTatankaCandidate(baseNo) {
-  // Find this product in PARTS_DB and pre-populate as a guess
-  if (typeof PARTS_DB === 'undefined') return;
-  const dbMatch = PARTS_DB.find(p => p.no.replace(/-\d$/,'').replace(/[A-Z]$/,'') === baseNo ||
-                                      p.no.startsWith(baseNo));
-  if (!dbMatch) { showToast('Part not in catalogue — add manually', 'error'); return; }
-  const tatanka = getTatankaData(dbMatch.no);
-  selectedGuess = { name: dbMatch.name, sv: dbMatch.sv, no: dbMatch.no,
-                    group: dbMatch.g, confidence: 80, tatanka,
-                    reason: 'Selected from Tatanka visual match' };
-  showConfirmStep();
-}
-
-
 
 function selectGuess(index, el) {
   document.querySelectorAll('.guess-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
   selectedGuess = currentGuesses[index];
   setTimeout(() => showConfirmStep(), 300);
+}
+
+function selectTatankaCandidate() { console.warn("selectTatankaCandidate not implemented"); }
+
+// ═══════════════════════════════════════════════════════
+// AI PHOTO ANALYSIS
+// ═══════════════════════════════════════════════════════
+
+async function analyzePhoto(useSonnet = false) {
+  if (!currentPhoto) { showToast('No photo to analyze', 'error'); return; }
+
+  const apiKey = SETTINGS.apiKey;
+  if (!apiKey) { showToast('Add Claude API key in Settings', 'error'); return; }
+
+  const btn    = document.getElementById('analyzeBtn');
+  const btnTxt = document.getElementById('analyzeBtnText');
+  const spinner= document.getElementById('analyzeSpinner');
+  btn.disabled = true;
+  spinner.style.display = 'inline-block';
+
+  // Build catalogue sample for context (first 60 parts)
+  const catalogueSample = typeof PARTS_DB !== 'undefined'
+    ? PARTS_DB.slice(0, 60).map(p => `${p.no} — ${p.name} (${p.sv||''})`).join('\n')
+    : '';
+
+  // Build Tatanka URL hints from matched parts
+  const tatankaHints = typeof TATANKA_DB !== 'undefined'
+    ? Object.keys(TATANKA_DB).slice(0, 20).map(k => {
+        const t = TATANKA_DB[k][0];
+        return t ? `${k}: ${t.name} — ${t.product_url}` : null;
+      }).filter(Boolean).join('\n')
+    : '';
+
+  // Get user-set system filter if any
+  const systemFilter = document.getElementById('groupFilter')?.value || '';
+
+  const systemPrompt = `You are an expert mechanic specializing in Swedish vintage vehicles, specifically the Volvo C303 (also known as the TGB 11 or Laplander). This is a Swedish military 6×6 off-road vehicle produced from 1974 to 1981, powered by the B30 engine (3-litre inline-6). You must identify spare parts from photographs.
+
+VEHICLE CONTEXT:
+- Volvo C303 / TGB 11 / Laplander
+- Engine: Volvo B30 (3.0L inline-6 petrol)
+- Transmission: Volvo M41 4-speed + Volvo VPS transfer case
+- Suspension: Portal axles (Husqvarna design), coil springs
+- Era: 1974–1981 Swedish military production
+- Uses many parts shared with Volvo Amazon, 140 series, P1800, and early 240 series
+- Unique military parts: portal axle hubs, power take-off, capstan winch, convoy lighting
+
+PARTS CATALOGUE SAMPLE (use these for part number matching):
+${catalogueSample}
+
+TATANKA REFERENCE PRICES (tatanka.nu sells new/used Volvo parts):
+${tatankaHints}
+
+IDENTIFICATION RULES:
+1. Identify the part type first (e.g. "clutch pedal arm", "water pump", "fuel filter")
+2. Cross-reference with the catalogue sample above — if you see a close match, include the part number
+3. If unsure between similar variants (e.g. clutch vs brake pedal), list ALL plausible variants
+4. For pedals: clutch=leftmost/longest, brake=widest footpad, accelerator=narrowest/rightmost
+5. Condition: examine wear, rust, cracks, missing pieces
+6. Note if the part appears to be a Bosch, SU, Zenith, or Stromberg branded component (common on these vehicles)
+${systemFilter ? `7. User has indicated this is a ${systemFilter} part — prioritize matches in this category` : ''}
+
+Respond ONLY with valid JSON:
+{
+  "guesses": [
+    {
+      "sv": "Swedish part name",
+      "no": "part number if identifiable or empty string",
+      "confidence": 0-100,
+      "condition": "good|fair|poor",
+      "notes": "brief identifying notes"
+    }
+  ],
+  "ai_sees": "What you observe in the image: shape, material, markings, condition",
+  "vehicle_notes": "Why this part fits the Volvo C303 specifically"
+}`;
+
+  try {
+    btnTxt.textContent = 'ANALYZING...';
+
+    const model = useSonnet ? 'claude-sonnet-4-5' : 'claude-haiku-4-5-20251001';
+    const images = [{ type:'base64', media_type:'image/jpeg', data: currentPhoto }];
+    if (extraAngles.length > 0) {
+      extraAngles.forEach(a => images.push({ type:'base64', media_type:'image/jpeg', data: a }));
+    }
+
+    const contentBlocks = images.map(img => ({ type:'image', source: img }));
+    contentBlocks.push({ type:'text', text: 'Identify this Volvo C303 spare part.' });
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role:'user', content: contentBlocks }]
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    const raw = data.content[0]?.text || '';
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON in response');
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    const guesses = (parsed.guesses || []).map(g => {
+      const dbMatch = typeof PARTS_DB !== 'undefined'
+        ? PARTS_DB.find(p => p.no === g.no || p.name.toLowerCase() === (g.name||'').toLowerCase())
+        : null;
+      if (dbMatch) { g.no = dbMatch.no; g.sv = dbMatch.sv || g.sv; }
+      g.tatanka = getTatankaData(g.no);
+      return g;
+    });
+
+    currentGuesses = guesses;
+
+    // Show AI Sees panel
+    const aiSeesPanel = document.getElementById('aiSees');
+    if (aiSeesPanel && parsed.ai_sees) {
+      aiSeesPanel.style.display = 'block';
+      aiSeesPanel.innerHTML = `<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">AI SEES</div>
+        <div style="font-size:12px;color:var(--text2)">${parsed.ai_sees}</div>
+        ${parsed.vehicle_notes ? `<div style="font-size:11px;color:var(--accent);margin-top:4px">🚙 ${parsed.vehicle_notes}</div>` : ''}`;
+    }
+
+    // Auto-apply best guess if high confidence
+    if (guesses.length > 0 && guesses[0].confidence >= 70) {
+      selectedGuess = guesses[0];
+      showConfirmStep();
+    } else if (guesses.length > 0) {
+      // Show options — populate AI results panel
+      selectedGuess = guesses[0];
+      showConfirmStep();
+    } else {
+      showToast('Could not identify part — try a different angle', 'error');
+    }
+
+  } catch(err) {
+    showToast('AI error: ' + err.message, 'error');
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btnTxt.textContent = '🔍 RUN AI IDENTIFICATION';
+    spinner.style.display = 'none';
+  }
 }
 
 function showConfirmStep() {
@@ -1755,10 +1735,10 @@ function showConfirmStep() {
   // Part summary
   document.getElementById('confirmedPartSummary').innerHTML = `
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-      ${tatankaItems[0]?.image_local ? `<img src="${tatankaItems[0].image_local}" style="width:64px;height:64px;border-radius:6px;object-fit:cover;border:1px solid var(--accent)">` : `<div style="width:64px;height:64px;border-radius:6px;background:var(--surface3);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px">🔧</div>`}
+      ${tatankaItems[0]?.image_local ? `<img src="${tatankaItems[0].image_local}" style="width:64px;height:64px;border-radius:6px;object-fit:cover;border:1px solid var(--accent)">` : `<div style="width:64px;height:64px;border-radius:6px;background:var(--surface3);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px">\ud83d\udd27</div>`}
       <div>
         <div style="font-size:16px;font-weight:600;margin-bottom:3px">${g.name}</div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)">${g.no || '—'}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)">${g.no || '\u2014'}</div>
         ${g.sv ? `<div style="font-size:12px;color:var(--text2)">${g.sv}</div>` : ''}
       </div>
     </div>`;
@@ -1778,19 +1758,19 @@ function buildTatankaPanel(items, partNo) {
   const rows = items.slice(0,3).map(t => {
     const eur = sekToEur(t.price_sek);
     return `<div class="tatanka-row">
-      ${t.image_local ? `<img class="tatanka-img" src="${t.image_local}" alt="">` : `<div class="tatanka-img-ph">🔧</div>`}
+      ${t.image_local ? `<img class="tatanka-img" src="${t.image_local}" alt="">` : `<div class="tatanka-img-ph">\ud83d\udd27</div>`}
       <div class="tatanka-info">
         <div class="tatanka-name">${t.name}</div>
         <div class="tatanka-price">${eur ? formatEur(eur) : 'Price on request'} <span class="tatanka-sek">${formatSek(t.price_sek)}</span></div>
         <div style="margin-top:3px">${getStockBadge(t.stock)} ${t.is_used ? '<span class="badge badge-muted">USED</span>' : t.is_upgrade ? '<span class="badge badge-blue">UPGRADE</span>' : '<span class="badge badge-yellow">ORIGINAL</span>'}</div>
         ${t.image_reference_only ? '<div style="font-size:9px;color:var(--muted);margin-top:2px">* image for reference only</div>' : ''}
       </div>
-      <a class="tatanka-link" href="${t.product_url}" target="_blank">VIEW →</a>
+      <a class="tatanka-link" href="${t.product_url}" target="_blank">VIEW \u2192</a>
     </div>`;
   }).join('');
 
   return `<div class="tatanka-panel">
-    <div class="tatanka-header">🏪 TATANKA.NU</div>
+    <div class="tatanka-header">\ud83c\udfea TATANKA.NU</div>
     ${rows}
   </div>`;
 }
@@ -1798,101 +1778,7 @@ function buildTatankaPanel(items, partNo) {
 async function retryAnalysis() {
   identifyAttempt++;
   showStep(1);
-  await analyzePhoto(false);
-}
-
-function backToGuesses() { showStep(2); }
-
-function setCondition(val, el) {
-  currentCondition = val;
-  document.querySelectorAll('.cond-btn').forEach(b => b.className = 'cond-btn');
-  el.classList.add('active-' + val);
-}
-
-function showStep(n) {
-  for (let i = 1; i <= 4; i++) {
-    const el = document.getElementById('identStep' + i);
-    if (el) el.style.display = i === n ? 'block' : 'none';
-    const step = document.getElementById('step' + i);
-    if (step) {
-      step.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
-    }
-  }
-  document.querySelector('.main').scrollTop = 0;
-}
-
-// ═══════════════════════════════════════════════════════
-// SAVE PART
-// ═══════════════════════════════════════════════════════
-
-async function savePart() {
-  const box = document.getElementById('confirmBox').value.trim();
-  const qty = parseInt(document.getElementById('confirmQty').value) || 1;
-  const price = parseFloat(document.getElementById('confirmPrice').value) || 0;
-  const notes = document.getElementById('confirmNotes').value.trim();
-
-  if (!box) { showToast('Box number is required', 'error'); return; }
-  if (!price) { showToast('Asking price is required', 'error'); return; }
-
-  const g = selectedGuess;
-
-  // Save photo
-  let photoPath = null;
-  if (currentPhotoBlob) {
-    const photoId = 'inv_' + Date.now();
-    const reader = new FileReader();
-    photoPath = await new Promise(resolve => {
-      reader.onload = e => resolve(e.target.result);
-      reader.readAsDataURL(currentPhotoBlob);
-    });
-  }
-
-  // Check for existing same part in same box
-  const existing = INVENTORY.find(i =>
-    i.partNo === g.no && i.box === box && i.status !== 'sold'
-  );
-
-  const newItem = {
-    id: Date.now(),
-    partNo: g.no || '',
-    name: g.name || '',
-    nameSv: g.sv || '',
-    group: g.group || '',
-    box: box,
-    qty: qty,
-    condition: currentCondition,
-    askingPrice: price,
-    notes: notes,
-    photo: photoPath,
-    status: 'available',
-    addedDate: new Date().toISOString(),
-    isCustom: false,
-    isUnknown: false,
-  };
-
-  let duplicateMsg = '';
-  if (existing) {
-    existing.qty += qty;
-    duplicateMsg = `Added ${qty} to existing entry in Box ${box}. Total: ${existing.qty} pcs.`;
-    saveInventory();
-  } else {
-    INVENTORY.push(newItem);
-    saveInventory();
-  }
-
-  showStep(4);
-  document.getElementById('savedPartSummary').innerHTML =
-    `<b>${g.name}</b><br>${g.no || ''} · Box ${box} · ×${qty}<br><span style="color:var(--green)">${formatEur(price)}</span>`;
-
-  const dupWarn = document.getElementById('duplicateWarning');
-  if (duplicateMsg) {
-    dupWarn.style.display = 'block';
-    dupWarn.innerHTML = '⚠️ ' + duplicateMsg;
-  } else {
-    dupWarn.style.display = 'none';
-  }
-
-  showToast('Part saved!', 'success');
+  await analyzePhoto();
 }
 
 function addAsUnknown() {
@@ -1933,32 +1819,380 @@ async function saveUnknownPart(form) {
   showScreen('inventory');
 }
 
+function setEntryMode(mode) {
+  entryMode = mode;
+  document.getElementById('entryModeCatalogue').style.display = mode === 'catalogue' ? 'block' : 'none';
+  document.getElementById('entryModeCustom').style.display    = mode === 'custom'    ? 'block' : 'none';
+  document.getElementById('modeTabCatalogue').style.background = mode === 'catalogue' ? 'var(--accent)' : 'var(--surface2)';
+  document.getElementById('modeTabCatalogue').style.color      = mode === 'catalogue' ? '#000' : 'var(--muted)';
+  document.getElementById('modeTabCustom').style.background    = mode === 'custom'    ? 'var(--accent)' : 'var(--surface2)';
+  document.getElementById('modeTabCustom').style.color         = mode === 'custom'    ? '#000' : 'var(--muted)';
+}
+
+function onSmartSearch(val) {
+  const el = document.getElementById('smartSearchResults');
+  if (!val || val.trim().length < 2 || typeof PARTS_DB === 'undefined' || PARTS_DB.length === 0) {
+    el.style.display = 'none'; return;
+  }
+  const q = val.trim();
+  const isPartNo = /^\d/.test(q);
+  let results;
+  if (isPartNo) {
+    results = PARTS_DB.filter(p => p.no.startsWith(q) || p.no.replace(/-\d$/,'').startsWith(q)).slice(0, 8);
+    if (results.length === 0) results = PARTS_DB.filter(p => p.no.includes(q)).slice(0, 8);
+  } else {
+    const terms = expandSearchTerms(q);
+    results = PARTS_DB.map(p => ({ p, score: searchScore(p, terms) })).filter(x => x.score > 0)
+      .sort((a, b) => b.score - a.score).slice(0, 8).map(x => x.p);
+  }
+  if (results.length === 0) {
+    el.style.display = 'block';
+    el.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:var(--muted)">No matches — try different words, or switch to Custom Part</div>';
+    return;
+  }
+  el.style.display = 'block';
+  el.innerHTML = results.map(p => {
+    const tatanka = getTatankaData(p.no);
+    const best = tatanka.find(t => !t.is_used) || tatanka[0];
+    const priceHint = best && sekToEur(best.price_sek) ? ` · ~${formatEur(sekToEur(best.price_sek))}` : '';
+    return `<div onclick="applyPartFromDB('${p.no.replace(/'/g,"\'")}','${p.name.replace(/'/g,"\'")}','${(p.sv||'').replace(/'/g,"\'")}','${p.g}')"
+      style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+      ${best?.image_local ? `<img src="${best.image_local}" style="width:36px;height:36px;border-radius:4px;object-fit:cover;flex-shrink:0">` : '<div style="width:36px;height:36px;border-radius:4px;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🔧</div>'}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent)">${p.no}</div>
+        <div style="font-size:10px;color:var(--muted)">${p.sv || ''}${tatanka.length > 0 ? '<span style="color:var(--green)">  ✓ Tatanka' + priceHint + '</span>' : ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function clearSelectedPart() {
+  partSelected = false;
+  document.getElementById('selectedPartPreview').style.display = 'none';
+  document.getElementById('smartSearch').value = '';
+  document.getElementById('smartSearchResults').style.display = 'none';
+  document.getElementById('manualPartNo').value = '';
+  document.getElementById('manualName').value = '';
+  document.getElementById('manualNameSv').value = '';
+  document.getElementById('manualGroup').value = '';
+  selectedGuess = null;
+  suggestBoxForPart('');
+}
+
+function applyPartFromDB(no, name, sv, group) {
+  document.getElementById('smartSearch').value = name;
+  document.getElementById('smartSearchResults').style.display = 'none';
+  document.getElementById('manualPartNo').value = no;
+  document.getElementById('manualName').value = name;
+  document.getElementById('manualNameSv').value = sv;
+  document.getElementById('manualGroup').value = group || '';
+  document.getElementById('selectedPartName').textContent = name;
+  document.getElementById('selectedPartNo').textContent = no || '— no part number';
+  document.getElementById('selectedPartSv').textContent = sv || '';
+  document.getElementById('selectedPartPreview').style.display = 'block';
+  partSelected = true;
+  selectedGuess = { no, name, sv, group, confidence: 100, tatanka: getTatankaData(no), fromManual: true };
+  suggestBoxForPart(no);
+}
+
+function onPartNoInput() {}
+
+function lookupPartNo() {}
+
+function suggestBoxForPart(partNo) {
+  const el = document.getElementById('boxSuggestion');
+  if (!partNo || INVENTORY.length === 0) { el.style.display = 'none'; return; }
+  const existing = INVENTORY.find(i => i.partNo === partNo && i.status !== 'sold');
+  if (existing) {
+    el.style.display = 'block';
+    el.innerHTML = `Same part in Box <b>${existing.box}</b> — <span onclick="document.getElementById('manualBox').value='${existing.box}';this.parentElement.style.display='none'" style="color:var(--accent);text-decoration:underline">use same box</span>`;
+    document.getElementById('manualBox').value = existing.box;
+    return;
+  }
+  const grp = document.getElementById('manualGroup') ? document.getElementById('manualGroup').value : '';
+  if (grp && INVENTORY.length > 0) {
+    const sameGroup = INVENTORY.filter(i => i.group === grp && i.status !== 'sold');
+    if (sameGroup.length > 0) {
+      const boxCounts = {};
+      sameGroup.forEach(i => { boxCounts[i.box] = (boxCounts[i.box]||0) + 1; });
+      const topBox = Object.entries(boxCounts).sort((a,b) => b[1]-a[1])[0][0];
+      el.style.display = 'block';
+      el.innerHTML = `Similar parts in Box <b>${topBox}</b> — <span onclick="document.getElementById('manualBox').value='${topBox}';this.parentElement.style.display='none'" style="color:var(--accent);text-decoration:underline">use same box</span> <span style="color:var(--muted)">(or edit)</span>`;
+    }
+  } else { el.style.display = 'none'; }
+}
+
+function goToPhotoStep() {
+  const box = document.getElementById('manualBox').value.trim();
+  if (!box) { showToast('Box number is required', 'error'); return; }
+  if (entryMode === 'custom') {
+    const name = document.getElementById('customName').value.trim();
+    if (!name) { showToast('Part name is required', 'error'); return; }
+    const brand = document.getElementById('customBrand').value.trim();
+    const sourceUrl = document.getElementById('customSourceUrl').value.trim();
+    selectedGuess = { no: '', name, sv: '', group: '', confidence: 100, tatanka: [],
+                      fromManual: true, isCustom: true, brand, sourceUrl };
+    document.getElementById('manualName').value = name;
+    document.getElementById('manualPartNo').value = '';
+    document.getElementById('manualNameSv').value = '';
+  } else {
+    const name = document.getElementById('manualName').value.trim();
+    if (!name) { showToast('Please select a part from the search results', 'error'); return; }
+    if (!partSelected && !selectedGuess) { showToast('Please select a part from the dropdown', 'error'); return; }
+  }
+  showStep(2);
+}
+
+function clearAiResults() {
+  document.getElementById('aiResults').style.display = 'none';
+  document.getElementById('guessResults').innerHTML = '';
+  document.getElementById('analyzeBtn').disabled = !currentPhoto;
+}
+
+function goToPriceStep() {
+  const name = document.getElementById('manualName').value.trim();
+  const no   = document.getElementById('manualPartNo').value.trim();
+  const sv   = document.getElementById('manualNameSv').value.trim();
+  if (!name) { showToast('Go back and enter part name', 'error'); return; }
+  if (!selectedGuess || selectedGuess.fromManual) {
+    const isCustom = entryMode === 'custom';
+    const customBrand = isCustom ? document.getElementById('customBrand').value.trim() : '';
+    const sourceUrl   = isCustom ? document.getElementById('customSourceUrl').value.trim() : '';
+    selectedGuess = { no, name, sv, group: '', confidence: 100,
+                      tatanka: no ? getTatankaData(no) : [],
+                      fromManual: true, isCustom, brand: customBrand, sourceUrl };
+  }
+  const g = selectedGuess;
+  const thumb = currentPhoto
+    ? `<img src="data:image/jpeg;base64,${currentPhoto}" style="width:64px;height:64px;border-radius:6px;object-fit:cover;border:1px solid var(--accent);flex-shrink:0">`
+    : `<div style="width:64px;height:64px;border-radius:6px;background:var(--surface3);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">🔧</div>`;
+  document.getElementById('confirmedPartSummary').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+      ${thumb}
+      <div>
+        <div style="font-size:16px;font-weight:600;margin-bottom:3px">${g.name}</div>
+        ${g.no ? `<div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)">${g.no}</div>` : ''}
+        ${g.sv ? `<div style="font-size:12px;color:var(--text2)">${g.sv}</div>` : ''}
+        <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap">
+          <span class="badge badge-muted">📦 Box ${document.getElementById('manualBox').value}</span>
+          <span class="badge badge-muted">×${document.getElementById('manualQty').value||1}</span>
+          ${getConditionBadge(currentCondition)}
+        </div>
+      </div>
+    </div>`;
+  renderTatankaMatchOptions(g.tatanka || []);
+  showStep(3);
+}
+
+function renderTatankaMatchOptions(items) {
+  const card = document.getElementById('tatankaMatchCard');
+  const optEl = document.getElementById('tatankaMatchOptions');
+  const noMatch = document.getElementById('tatankaNoMatch');
+  const shortcuts = document.getElementById('priceShortcuts');
+  selectedTatankaRef = null;
+  document.getElementById('tatankaSelectedRef').style.display = 'none';
+  shortcuts.innerHTML = '';
+  if (!items || items.length === 0) { card.style.display = 'block'; optEl.style.display = 'none'; noMatch.style.display = 'block'; return; }
+  card.style.display = 'block'; noMatch.style.display = 'none'; optEl.style.display = 'block';
+  optEl.innerHTML = items.map((t, i) => {
+    const eur = sekToEur(t.price_sek);
+    const typeLabel = t.is_used ? '🔧 Used' : t.is_upgrade ? '⬆️ Upgrade' : '✨ Original/New';
+    const discountIn  = eur ? Math.round(eur * SETTINGS.discountIn  / 100 * 100) / 100 : 0;
+    const discountOut = eur ? Math.round(eur * SETTINGS.discountOut / 100 * 100) / 100 : 0;
+    const suggested = (t.stock === 'temp_finished' || t.stock === 'out_of_stock') ? discountOut : discountIn;
+    return `<div class="tatanka-match-option" id="tatankaOpt${i}" onclick="selectTatankaRef(${i})"
+        style="border:2px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:8px;cursor:pointer;transition:border-color 0.15s">
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        ${t.image_local ? `<img src="${t.image_local}" style="width:52px;height:52px;border-radius:5px;object-fit:cover;flex-shrink:0">` : '<div style="width:52px;height:52px;border-radius:5px;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🔧</div>'}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;margin-bottom:2px">${t.name}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px"><span class="badge badge-muted">${typeLabel}</span>${getStockBadge(t.stock)}</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);font-weight:600">${eur ? formatEur(eur) : '—'} <span style="color:var(--muted);font-size:10px">${formatSek(t.price_sek)}</span></div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">Suggested: <b style="color:var(--green)">${formatEur(suggested)}</b> (${(t.stock === 'temp_finished'||t.stock==='out_of_stock') ? SETTINGS.discountOut : SETTINGS.discountIn}% of Tatanka)</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('') + `<div onclick="selectTatankaRef(-1)" id="tatankaOptNone"
+      style="border:2px solid var(--border);border-radius:var(--radius);padding:10px;cursor:pointer;text-align:center;font-size:13px;color:var(--muted)">
+    ✕ None of these — I'll set price manually
+  </div>`;
+  if (items.length === 1) selectTatankaRef(0);
+}
+
+function selectTatankaRef(index) {
+  document.querySelectorAll('[id^="tatankaOpt"]').forEach(el => { el.style.borderColor = 'var(--border)'; });
+  if (index === -1) {
+    selectedTatankaRef = null;
+    document.getElementById('tatankaSelectedRef').style.display = 'none';
+    document.getElementById('priceShortcuts').innerHTML = '';
+    document.getElementById('confirmPrice').value = '';
+    const el = document.getElementById('tatankaOptNone');
+    if (el) el.style.borderColor = 'var(--accent)';
+    return;
+  }
+  const items = selectedGuess?.tatanka || [];
+  const t = items[index];
+  if (!t) return;
+  selectedTatankaRef = t;
+  const el = document.getElementById('tatankaOpt' + index);
+  if (el) el.style.borderColor = 'var(--accent)';
+  const eur = sekToEur(t.price_sek);
+  const discountIn  = eur ? Math.round(eur * SETTINGS.discountIn  / 100 * 100) / 100 : null;
+  const discountOut = eur ? Math.round(eur * SETTINGS.discountOut / 100 * 100) / 100 : null;
+  const suggested   = (t.stock === 'temp_finished' || t.stock === 'out_of_stock') ? discountOut : discountIn;
+  if (suggested) document.getElementById('confirmPrice').value = suggested.toFixed(2);
+  const refEl = document.getElementById('tatankaSelectedRef');
+  refEl.style.display = 'block';
+  refEl.innerHTML = `<div style="background:var(--surface2);border:1px solid var(--border2);border-left:3px solid var(--accent);border-radius:var(--radius);padding:10px;font-size:12px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:4px">TATANKA REFERENCE</div>
+    <div style="font-weight:600;margin-bottom:4px">${t.name}</div>
+    <div style="display:flex;gap:12px"><div>Tatanka: <b>${eur ? formatEur(eur) : '—'}</b></div><div>Your cut: <b style="color:var(--green)">${suggested ? formatEur(suggested) : '—'}</b></div></div>
+  </div>`;
+  const shortcuts = document.getElementById('priceShortcuts');
+  const btns = [];
+  if (discountIn)  btns.push(`<button onclick="document.getElementById('confirmPrice').value='${discountIn.toFixed(2)}'" style="padding:5px 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;color:var(--text);cursor:pointer">${SETTINGS.discountIn}% → ${formatEur(discountIn)}</button>`);
+  if (discountOut) btns.push(`<button onclick="document.getElementById('confirmPrice').value='${discountOut.toFixed(2)}'" style="padding:5px 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;color:var(--text);cursor:pointer">${SETTINGS.discountOut}% → ${formatEur(discountOut)}</button>`);
+  if (eur)         btns.push(`<button onclick="document.getElementById('confirmPrice').value='${eur.toFixed(2)}'" style="padding:5px 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;color:var(--text);cursor:pointer">Full → ${formatEur(eur)}</button>`);
+  shortcuts.innerHTML = btns.join('');
+}
+
+function setCondition(val, el) {
+  currentCondition = val;
+  document.querySelectorAll('.cond-btn').forEach(b => b.className = 'cond-btn');
+  el.classList.add('active-' + val);
+}
+
+function showStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('identStep' + i);
+    if (el) el.style.display = i === n ? 'block' : 'none';
+    const step = document.getElementById('step' + i);
+    if (step) {
+      step.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+    }
+  }
+  document.querySelector('.main').scrollTop = 0;
+}
+
+function backToGuesses() { showStep(2); }
+
+async function savePart() {
+  const box   = document.getElementById('manualBox').value.trim();
+  const qty   = parseInt(document.getElementById('manualQty').value) || 1;
+  const price = parseFloat(document.getElementById('confirmPrice').value) || 0;
+  const notes = document.getElementById('manualNotes').value.trim();
+
+  if (!box)   { showToast('Box number is required', 'error'); return; }
+  if (!price) { showToast('Asking price is required', 'error'); return; }
+
+  // Merge manual fields into selectedGuess
+  const g = selectedGuess || {};
+  const manualName = document.getElementById('manualName').value.trim();
+  const manualNo   = document.getElementById('manualPartNo').value.trim();
+  const manualSv   = document.getElementById('manualNameSv').value.trim();
+  g.name = manualName || g.name || 'Unknown';
+  g.no   = manualNo   || g.no   || '';
+  g.sv   = manualSv   || g.sv   || '';
+  if (entryMode === 'custom') {
+    g.isCustom = true;
+    g.brand    = document.getElementById('customBrand').value.trim();
+    g.sourceUrl= document.getElementById('customSourceUrl').value.trim();
+  }
+
+  // Save photo
+  let photoPath = null;
+  if (currentPhotoBlob) {
+    const photoId = 'inv_' + Date.now();
+    const reader = new FileReader();
+    photoPath = await new Promise(resolve => {
+      reader.onload = e => resolve(e.target.result);
+      reader.readAsDataURL(currentPhotoBlob);
+    });
+  }
+
+  // Check for existing same part in same box
+  const existing = INVENTORY.find(i =>
+    i.partNo === g.no && i.box === box && i.status !== 'sold'
+  );
+
+  const newItem = {
+    id: Date.now(),
+    partNo: g.no || '',
+    name: g.name || '',
+    nameSv: g.sv || '',
+    group: g.group || '',
+    box: box,
+    qty: qty,
+    condition: currentCondition,
+    askingPrice: price,
+    notes: notes,
+    photo: photoPath,
+    status: 'available',
+    addedDate: new Date().toISOString(),
+    isCustom: g.isCustom || false,
+    isUnknown: false,
+    brand: g.brand || null,
+    sourceUrl: g.sourceUrl || null,
+    tatankaRef: (typeof selectedTatankaRef !== 'undefined' && selectedTatankaRef)
+      ? { name: selectedTatankaRef.name, price_sek: selectedTatankaRef.price_sek, product_url: selectedTatankaRef.product_url }
+      : null,
+  };
+
+  let duplicateMsg = '';
+  if (existing) {
+    existing.qty += qty;
+    duplicateMsg = `Added ${qty} to existing entry in Box ${box}. Total: ${existing.qty} pcs.`;
+    saveInventory();
+  } else {
+    INVENTORY.push(newItem);
+    saveInventory();
+  }
+
+  showStep(4);
+  document.getElementById('savedPartSummary').innerHTML =
+    `<b>${g.name}</b><br>${g.no || ''} \u00b7 Box ${box} \u00b7 \u00d7${qty}<br><span style="color:var(--green)">${formatEur(price)}</span>`;
+
+  const dupWarn = document.getElementById('duplicateWarning');
+  if (duplicateMsg) {
+    dupWarn.style.display = 'block';
+    dupWarn.innerHTML = '\u26a0\ufe0f ' + duplicateMsg;
+  } else {
+    dupWarn.style.display = 'none';
+  }
+
+  showToast('Part saved!', 'success');
+}
+
 function resetIdentify() {
   currentPhoto = null; currentPhotoBlob = null;
   currentGuesses = []; selectedGuess = null; currentCondition = null;
   const area = document.getElementById('photoArea');
   area.classList.remove('has-photo');
-  area.innerHTML = `<div class="photo-placeholder"><div class="photo-icon">📷</div><div class="photo-label">TAP TO TAKE PHOTO</div><div class="photo-sublabel">or choose from gallery</div></div>`;
+  area.innerHTML = `<div class="photo-placeholder"><div class="photo-icon">\ud83d\udcf7</div><div class="photo-label">TAP TO TAKE PHOTO</div><div class="photo-sublabel">or choose from gallery</div></div>`;
   area.onclick = () => document.getElementById('cameraInput').click();
   document.getElementById('analyzeBtn').disabled = true;
   document.getElementById('groupFilter').value = '';
-  document.getElementById('confirmBox').value = '';
-  document.getElementById('confirmQty').value = '1';
+  document.getElementById('manualBox').value = '';
+  document.getElementById('manualQty').value = '1';
+  document.getElementById('manualNotes').value = '';
+  document.getElementById('manualName').value = '';
+  document.getElementById('manualPartNo').value = '';
+  document.getElementById('manualNameSv').value = '';
+  if (document.getElementById('smartSearch')) document.getElementById('smartSearch').value = '';
+  if (document.getElementById('selectedPartPreview')) document.getElementById('selectedPartPreview').style.display = 'none';
+  if (document.getElementById('smartSearchResults')) document.getElementById('smartSearchResults').style.display = 'none';
+  if (document.getElementById('boxSuggestion')) document.getElementById('boxSuggestion').style.display = 'none';
+  if (document.getElementById('customName')) document.getElementById('customName').value = '';
+  if (document.getElementById('customBrand')) document.getElementById('customBrand').value = '';
+  if (document.getElementById('customSourceUrl')) document.getElementById('customSourceUrl').value = '';
+  partSelected = false;
+  setEntryMode('catalogue');
   document.getElementById('confirmPrice').value = '';
   document.getElementById('confirmNotes').value = '';
   document.querySelectorAll('.cond-btn').forEach(b => b.className = 'cond-btn');
-  extraAngles = [];
-  renderAngleStrip();
-  document.getElementById('addAngleBtn').style.display = 'none';
   showStep(1);
 }
-
-// ═══════════════════════════════════════════════════════
-// INVENTORY RENDER
-// ═══════════════════════════════════════════════════════
-
-let invFilter = 'all';
-let invSearch = '';
 
 function setInvFilter(f, el) {
   invFilter = f;
@@ -1997,7 +2231,7 @@ function renderInventory() {
 
   if (items.length === 0) {
     list.innerHTML = `<div class="empty">
-      <div class="empty-icon">${invFilter === 'unknown' ? '❓' : '📦'}</div>
+      <div class="empty-icon">${invFilter === 'unknown' ? '\u2753' : '\ud83d\udce6'}</div>
       <div class="empty-title">${invFilter === 'unknown' ? 'NO UNKNOWN PARTS' : 'NO PARTS'}</div>
       <div class="empty-text">${invFilter === 'all' ? 'Start by identifying and adding parts.' : 'Nothing matches your filter.'}</div>
     </div>`;
@@ -2015,7 +2249,7 @@ function renderInvItem(item) {
   const thumb = item.photo ?
     `<img class="inv-thumb" src="${item.photo}" alt="">` :
     (bestT?.image_local ? `<img class="inv-thumb" src="${bestT.image_local}" alt="">` :
-    `<div class="inv-thumb-ph">${item.isUnknown ? '❓' : '🔧'}</div>`);
+    `<div class="inv-thumb-ph">${item.isUnknown ? '\u2753' : '\ud83d\udd27'}</div>`);
 
   const cls = item.isUnknown ? 'unknown-item' : 'inv-item';
 
@@ -2026,8 +2260,8 @@ function renderInvItem(item) {
         <div class="inv-name">${item.name || 'Unknown Part'}</div>
         <div class="inv-no">${item.partNo || ''}</div>
         <div class="inv-meta">
-          <span class="badge badge-muted">📦 Box ${item.box || '—'}</span>
-          <span class="badge badge-muted">×${item.qty || 1}</span>
+          <span class="badge badge-muted">\ud83d\udce6 Box ${item.box || '\u2014'}</span>
+          <span class="badge badge-muted">\u00d7${item.qty || 1}</span>
           ${getConditionBadge(item.condition)}
           ${getStatusBadge(item.status)}
         </div>
@@ -2039,16 +2273,14 @@ function renderInvItem(item) {
     </div>
     <div class="inv-actions">
       ${item.status !== 'sold' ? `
-        ${item.status === 'available' ? `<button class="btn btn-secondary btn-xs" onclick="setItemStatus(${item.id},'listed')">📢 MARK LISTED</button>` : ''}
-        ${item.status === 'listed' ? `<button class="btn btn-success btn-xs" onclick="confirmSold(${item.id})">💰 SOLD</button>` : ''}
-        ${item.status === 'listed' ? `<button class="btn btn-secondary btn-xs" onclick="setItemStatus(${item.id},'available')">↩ UNLIST</button>` : ''}
-        <button class="btn btn-secondary btn-xs" onclick="editItem(${item.id})">✏️ EDIT</button>
-        <button class="btn btn-secondary btn-xs" onclick="refreshItemPrice(${item.id})">↻ Price</button>
-        <button class="btn btn-secondary btn-xs" onclick="showQRForItem(${item.id})">🏷️ LABEL</button>
-      ` : `<span style="font-size:12px;color:var(--muted)">Sold on ${item.soldDate ? new Date(item.soldDate).toLocaleDateString() : '—'}</span>`}
-      ${item.isUnknown ? `<button class="btn btn-secondary btn-xs" onclick="retryIdentify(${item.id})">🔍 IDENTIFY</button>` : ''}
-      ${item.status !== 'sold' && !item.isUnknown ? `<button class="btn btn-secondary btn-xs" onclick="shareWhatsApp(${item.id})" style="background:rgba(37,211,102,0.15);border-color:#25D366;color:#25D366">💬 WhatsApp</button>` : ''}
-      <button class="btn btn-danger btn-xs" onclick="deleteItem(${item.id})">🗑️</button>
+        ${item.status === 'available' ? `<button class="btn btn-secondary btn-xs" onclick="setItemStatus(${item.id},'listed')">\ud83d\udce2 MARK LISTED</button>` : ''}
+        ${item.status === 'listed' ? `<button class="btn btn-success btn-xs" onclick="confirmSold(${item.id})">\ud83d\udcb0 SOLD</button>` : ''}
+        ${item.status === 'listed' ? `<button class="btn btn-secondary btn-xs" onclick="setItemStatus(${item.id},'available')">\u21a9 UNLIST</button>` : ''}
+        <button class="btn btn-secondary btn-xs" onclick="editItem(${item.id})">\u270f\ufe0f EDIT</button>
+        <button class="btn btn-secondary btn-xs" onclick="showQRForItem(${item.id})">\ud83c\udff7\ufe0f LABEL</button>
+      ` : `<span style="font-size:12px;color:var(--muted)">Sold on ${item.soldDate ? new Date(item.soldDate).toLocaleDateString() : '\u2014'}</span>`}
+      ${item.isUnknown ? `<button class="btn btn-secondary btn-xs" onclick="retryIdentify(${item.id})">\ud83d\udd0d IDENTIFY</button>` : ''}
+      <button class="btn btn-danger btn-xs" onclick="deleteItem(${item.id})">\ud83d\uddd1\ufe0f</button>
     </div>
   </div>`;
 }
@@ -2062,12 +2294,6 @@ function setItemStatus(id, status) {
   showToast('Status updated', 'success');
 }
 
-function confirmSold(id) {
-  const item = INVENTORY.find(i => i.id === id);
-  if (!item) return;
-  openModal('soldConfirm', item);
-}
-
 function markSold(id) {
   const item = INVENTORY.find(i => i.id === id);
   if (!item) return;
@@ -2077,22 +2303,13 @@ function markSold(id) {
   closeModal();
   renderInventory();
   renderSummary();
-  showToast('Part marked as sold ✓', 'success');
+  showToast('Part marked as sold \u2713', 'success');
 }
 
-function deleteItem(id) {
-  if (!confirm('Delete this part from inventory?')) return;
-  INVENTORY = INVENTORY.filter(i => i.id !== id);
-  saveInventory();
-  renderInventory();
-  renderSummary();
-  showToast('Deleted');
-}
-
-function editItem(id) {
+function confirmSold(id) {
   const item = INVENTORY.find(i => i.id === id);
   if (!item) return;
-  openModal('editItem', item);
+  openModal('soldConfirm', item);
 }
 
 function saveEditItem(id) {
@@ -2110,27 +2327,49 @@ function saveEditItem(id) {
   showToast('Updated', 'success');
 }
 
-function retryIdentify(id) {
-  const item = INVENTORY.find(i => i.id === id);
-  if (!item) return;
-  if (item.photo) {
-    currentPhoto = item.photo.split(',')[1];
-    currentPhotoBlob = null;
-    showScreen('identify');
-    const area = document.getElementById('photoArea');
-    area.classList.add('has-photo');
-    area.innerHTML = `<img src="${item.photo}" alt="">`;
-    document.getElementById('analyzeBtn').disabled = false;
-    showToast('Photo loaded — tap Analyze');
-  }
+function deleteItem(id) {
+  if (!confirm('Delete this part from inventory?')) return;
+  INVENTORY = INVENTORY.filter(i => i.id !== id);
+  saveInventory();
+  renderInventory();
+  renderSummary();
+  showToast('Deleted');
 }
 
-// ═══════════════════════════════════════════════════════
-// CATALOGUE
-// ═══════════════════════════════════════════════════════
+function editItem(id) {
+  const item = INVENTORY.find(i => i.id === id);
+  if (!item) return;
+  openModal('editItem', item);
+}
 
-let catFilter = '';
-let catSearch = '';
+function exportInventoryJSON() {
+  const blob = new Blob([JSON.stringify(INVENTORY,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `volvo_inventory_backup_${Date.now()}.json`;
+  a.click();
+  showToast('Backup saved!', 'success');
+}
+
+function importInventoryJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (Array.isArray(data)) {
+        INVENTORY = data;
+        saveInventory();
+        renderInventory();
+        renderSummary();
+        showToast('Backup restored!', 'success');
+      }
+    } catch(err) { showToast('Invalid backup file', 'error'); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
 
 function setCatFilter(f, el) {
   catFilter = f;
@@ -2144,130 +2383,42 @@ function filterCatalogue() {
   renderCatalogue();
 }
 
-// ── Search synonym map ──────────────────────────────────────
-const SEARCH_SYNONYMS = {
-  'screw':['screw','skruv','bolt','bult'],'bolt':['bolt','bult','screw','skruv'],
-  'nut':['nut','mutter'],'washer':['washer','bricka','ring'],
-  'gasket':['gasket','packning','seal','tätning'],'seal':['seal','tätning','gasket','packning','o-ring'],
-  'bearing':['bearing','lager','kullager'],'filter':['filter','insats','filterinsats'],
-  'hose':['hose','slang','pipe','rör'],'pipe':['pipe','rör','hose','slang'],
-  'pump':['pump'],'valve':['valve','ventil'],'spring':['spring','fjäder'],
-  'bracket':['bracket','fäste','konsol','hållare'],'cover':['cover','lock','kåpa'],
-  'plug':['plug','plugg','lock'],'shaft':['shaft','axel'],'gear':['gear','kugghjul','växel'],
-  'cable':['cable','kabel','vajer','vajern'],'switch':['switch','brytare','kontakt'],
-  'relay':['relay','relä'],'sensor':['sensor','givare'],
-  'lamp':['lamp','lampa','bulb','glödlampa'],'bulb':['bulb','glödlampa','lamp'],
-  'brake':['brake','broms'],'clutch':['clutch','koppling'],
-  'pad':['pad','belägg'],'disc':['disc','skiva','disk'],
-  'shock':['shock','dämpare','stötdämpare'],'bushing':['bushing','bussning'],
-  'pin':['pin','tapp','pinne','stift'],'clip':['clip','klämma'],
-  'rubber':['rubber','gummi'],'belt':['belt','rem','drivrem'],
-  'tank':['tank','behållare'],'engine':['engine','motor'],
-  'radiator':['radiator','kylare'],'fan':['fan','fläkt'],
-  'steering':['steering','styrning'],'door':['door','dörr'],
-  'window':['window','ruta','glas'],'seat':['seat','säte'],
-  'exhaust':['exhaust','avgasrör','avgassystem'],'intake':['intake','inlopp','luftfilter'],
-  'oil':['oil','olja','smörj'],'fuel':['fuel','bränsle'],
-  'coolant':['coolant','kylvätska'],'battery':['battery','batteri'],
-  'alternator':['alternator','generator'],'starter':['starter','startmotor'],
-  'ignition':['ignition','tändning','tändspole'],'axle':['axle','axel','nav'],
-  'wheel':['wheel','hjul','fälg'],'tire':['tire','tyre','däck'],
-  'suspension':['suspension','fjädring','upphängning'],'frame':['frame','ram'],
-  'bumper':['bumper','stötfångare'],'body':['body','karosseri'],
-  'heating':['heating','värme'],'wiring':['wiring','ledning','kablar'],
-  'fuse':['fuse','säkring'],'kit':['kit','sats','set'],
-  'plate':['plate','plåt','platta'],'bracket':['bracket','konsol','fäste'],
-  'clamp':['clamp','klämma','clips'],'stud':['stud','pinnbult','pinnskruv'],
-  'ring':['ring','bricka','tätningsring'],'bush':['bush','bussning'],
-  'cap':['cap','lock','huv'],'arm':['arm','länk','stag'],
-  'rod':['rod','stag','stång'],'link':['link','länk','stag'],
-  'joint':['joint','led','knut'],'shaft':['shaft','axel','axeln'],
-};
-
-function expandSearchTerms(query) {
-  const words = query.toLowerCase().trim().split(/\s+/);
-  const allTerms = new Set(words);
-  for (const word of words) {
-    if (SEARCH_SYNONYMS[word]) SEARCH_SYNONYMS[word].forEach(s => allTerms.add(s));
-    if (word.endsWith('s') && word.length > 3) allTerms.add(word.slice(0,-1));
-    if (word.endsWith('es') && word.length > 4) allTerms.add(word.slice(0,-2));
-    if (word.endsWith('ing') && word.length > 5) allTerms.add(word.slice(0,-3));
-  }
-  return [...allTerms];
-}
-
-function searchScore(part, terms) {
-  let score = 0;
-  const name = (part.name||'').toLowerCase();
-  const sv   = (part.sv||'').toLowerCase();
-  const no   = (part.no||'').toLowerCase();
-  for (const term of terms) {
-    if (no === term) { score += 100; continue; }
-    if (no.startsWith(term)) { score += 60; continue; }
-    if (no.includes(term)) { score += 40; continue; }
-    const nameWords = name.split(/\s+/);
-    if (nameWords.includes(term)) { score += 35; continue; }
-    if (name.includes(term)) { score += 20; continue; }
-    if (sv.includes(term)) { score += 10; continue; }
-  }
-  return score;
-}
-
 function renderCatalogue() {
   const list = document.getElementById('catList');
-  if (!list) return;
-
-  if (!PARTS_DB || PARTS_DB.length === 0) {
-    list.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">CATALOGUE NOT LOADED</div>
-      <div class="empty-text">PARTS_DB.js did not load.<br><br>Check that you:<br>
-      1. Changed <b>const PARTS_DB =</b> to <b>window.PARTS_DB_DATA =</b> in PARTS_DB.js<br>
-      2. Uncommented the script tag at the bottom of index.html</div></div>`;
-    return;
-  }
+  if (!list || typeof PARTS_DB === 'undefined') return;
 
   if (!catSearch && !catFilter) {
-    list.innerHTML = `<div class="empty"><div class="empty-icon">📋</div>
-      <div class="empty-title">SEARCH THE CATALOGUE</div>
-      <div class="empty-text">${PARTS_DB.length.toLocaleString()} parts loaded.<br>
-      Type a part name, number, or keyword.<br><br>
-      <span style="color:var(--accent)">Try: screw · gasket · bearing · filter · hose · valve</span></div></div>`;
+    list.innerHTML = `<div class="empty"><div class="empty-icon">\ud83d\udccb</div><div class="empty-title">SEARCH THE CATALOGUE</div><div class="empty-text">Type a part name, number, or Swedish name.<br>Or select a system filter above.</div></div>`;
     return;
   }
 
-  let items = [...PARTS_DB];
+  let items = PARTS_DB;
   if (catFilter) items = items.filter(p => p.g === catFilter);
-
   if (catSearch) {
-    const terms = expandSearchTerms(catSearch);
-    const scored = items
-      .map(p => ({ p, score: searchScore(p, terms) }))
-      .filter(x => x.score > 0)
-      .sort((a, b) => b.score - a.score);
-    items = scored.map(x => x.p);
+    items = items.filter(p =>
+      (p.name||'').toLowerCase().includes(catSearch) ||
+      (p.no||'').toLowerCase().includes(catSearch) ||
+      (p.sv||'').toLowerCase().includes(catSearch)
+    );
   }
 
   const shown = items.slice(0, 100);
   if (shown.length === 0) {
-    list.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">NO RESULTS</div>
-      <div class="empty-text">No match for "<b>${catSearch}</b>"<br><br>
-      <span style="color:var(--accent)">Try: screw · bolt · gasket · bearing · filter · hose · seal · valve · spring</span></div></div>`;
+    list.innerHTML = `<div class="empty"><div class="empty-icon">\ud83d\udd0d</div><div class="empty-title">NO RESULTS</div><div class="empty-text">Try a different search term.</div></div>`;
     return;
   }
 
-  list.innerHTML =
-    `<div class="section-header">${items.length > 100 ? 'Top 100 of '+items.length+' results' : items.length+' result'+(items.length>1?'s':'')}</div>` +
+  list.innerHTML = (items.length > 100 ? `<div class="section-header">Showing 100 of ${items.length} results \u2014 refine your search</div>` : '') +
     shown.map(p => {
       const tatankaItems = getTatankaData(p.no);
       const bestT = tatankaItems.find(t=>!t.is_used) || tatankaItems[0];
       const eur = bestT ? sekToEur(bestT.price_sek) : null;
-      const thumb = bestT?.image_local ?
-        `<img style="width:40px;height:40px;border-radius:5px;object-fit:cover;border:1px solid var(--border);flex-shrink:0" src="${bestT.image_local}" alt="">` :
-        `<div style="width:40px;height:40px;border-radius:5px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;color:var(--muted)">🔧</div>`;
-      return `<div class="cat-item" onclick="openCatDetail('${p.no.replace(/'/g,"\\'")}')">
+      const thumb = bestT?.image_local ? `<img style="width:40px;height:40px;border-radius:5px;object-fit:cover;border:1px solid var(--border);flex-shrink:0" src="${bestT.image_local}" alt="">` : `<div style="width:40px;height:40px;border-radius:5px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;color:var(--muted)">\ud83d\udd27</div>`;
+      return `<div class="cat-item" onclick="openCatDetail('${p.no.replace(/'/g,"\\\'")}')">
         ${thumb}
         <div class="cat-item-info">
           <div class="cat-item-name">${p.name}</div>
-          <div class="cat-item-no">${p.no} · ${p.sv}</div>
+          <div class="cat-item-no">${p.no} \u00b7 ${p.sv}</div>
         </div>
         <div class="cat-item-price">${eur ? formatEur(eur) : ''}</div>
       </div>`;
@@ -2280,9 +2431,28 @@ function openCatDetail(partNo) {
   openModal('catDetail', part);
 }
 
-// ═══════════════════════════════════════════════════════
-// SUMMARY & STATS
-// ═══════════════════════════════════════════════════════
+function addFromCatalogue(partNo) {
+  const part = (typeof PARTS_DB !== 'undefined') ? PARTS_DB.find(p => p.no === partNo) : null;
+  if (!part) return;
+  const tatankaItems = getTatankaData(partNo);
+  selectedGuess = {
+    name: part.name, sv: part.sv, no: part.no,
+    group: part.g, confidence: 100, tatanka: tatankaItems
+  };
+  showScreen('identify');
+  showStep(3);
+  showConfirmStep();
+}
+
+function filterByBox(box) {
+  showScreen('inventory');
+  document.getElementById('invSearch').value = box;
+  invSearch = box.toLowerCase();
+  invFilter = 'all';
+  document.querySelectorAll('#invFilterChips .chip').forEach(c => c.classList.remove('active'));
+  document.querySelector('#invFilterChips .chip').classList.add('active');
+  renderInventory();
+}
 
 function renderSummary() {
   const statsEl = document.getElementById('summaryStats');
@@ -2349,121 +2519,213 @@ function renderSummary() {
       const parts = byBox[box];
       const total = parts.reduce((s,p) => s + (p.askingPrice * p.qty), 0);
       return `<div class="box-card" onclick="filterByBox('${box}')">
-        <div class="box-title">📦 BOX ${box}</div>
-        <div class="box-parts">${parts.map(p => `${p.name} ×${p.qty}`).slice(0,5).join(' · ')}${parts.length > 5 ? ` · +${parts.length-5} more` : ''}</div>
-        <div style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green)">${formatEur(Math.round(total*100)/100)} · ${parts.length} part types</div>
+        <div class="box-title">\ud83d\udce6 BOX ${box}</div>
+        <div class="box-parts">${parts.map(p => `${p.name} \u00d7${p.qty}`).slice(0,5).join(' \u00b7 ')}${parts.length > 5 ? ` \u00b7 +${parts.length-5} more` : ''}</div>
+        <div style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green)">${formatEur(Math.round(total*100)/100)} \u00b7 ${parts.length} part types</div>
       </div>`;
     }).join('');
   }
 }
 
-function filterByBox(box) {
-  showScreen('inventory');
-  document.getElementById('invSearch').value = box;
-  invSearch = box.toLowerCase();
-  invFilter = 'all';
-  document.querySelectorAll('#invFilterChips .chip').forEach(c => c.classList.remove('active'));
-  document.querySelector('#invFilterChips .chip').classList.add('active');
-  renderInventory();
-}
+function openModal(type, data) {
+  const body = document.getElementById('modalBody');
+  let html = '';
 
-// ═══════════════════════════════════════════════════════
-// EXPORT
-// ═══════════════════════════════════════════════════════
-
-function exportCatalogue(mode) {
-  const active = INVENTORY.filter(i => i.status !== 'sold' && !i.isUnknown && i.askingPrice > 0);
-  if (active.length === 0) { showToast('No parts to export', 'error'); return; }
-
-  const date = new Date().toLocaleDateString('en-GB');
-  const totalEur = active.reduce((s,i) => s + i.askingPrice * i.qty, 0);
-
-  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <title>Volvo C3 Parts - Sales Catalogue</title>
-  <style>
-    body{font-family:Arial,sans-serif;max-width:900px;margin:0 auto;padding:20px;color:#333}
-    h1{color:#c97b2e;border-bottom:3px solid #c97b2e;padding-bottom:10px}
-    .meta{color:#666;font-size:14px;margin-bottom:20px}
-    table{width:100%;border-collapse:collapse;margin-bottom:20px}
-    th{background:#1a1a1a;color:#e8b84b;padding:10px;text-align:left;font-size:12px}
-    td{padding:9px 10px;border-bottom:1px solid #eee;font-size:13px}
-    tr:nth-child(even)td{background:#f9f9f9}
-    .part-card{border:1px solid #ddd;border-radius:8px;padding:14px;margin-bottom:12px;page-break-inside:avoid}
-    .part-no{font-family:monospace;color:#c97b2e;font-size:12px}
-    .part-name{font-size:16px;font-weight:bold;margin:4px 0}
-    .part-price{color:#27ae60;font-size:18px;font-weight:bold}
-    .part-meta{font-size:12px;color:#666;margin-top:4px}
-    .total{background:#1a1a1a;color:#e8b84b;padding:12px 16px;border-radius:6px;font-size:16px;font-weight:bold;text-align:right}
-    @media print{.no-print{display:none}}
-  </style></head><body>
-  <h1>🚙 Volvo C3 Series — Parts For Sale</h1>
-  <div class="meta">Generated: ${date} · ${active.length} parts · Contact for purchase</div>`;
-
-  if (mode === 'bulk') {
-    html += `<table><tr><th>Part No.</th><th>Description</th><th>Box</th><th>Qty</th><th>Condition</th><th>Price (EUR)</th></tr>`;
-    active.forEach(i => {
-      html += `<tr><td style="font-family:monospace">${i.partNo}</td><td>${i.name}${i.notes?`<br><small style="color:#999">${i.notes}</small>`:''}</td><td>${i.box}</td><td>${i.qty}</td><td>${i.condition||'—'}</td><td style="color:#27ae60;font-weight:600">${formatEur(i.askingPrice)}</td></tr>`;
-    });
-    html += `</table><div class="total">TOTAL: ${formatEur(Math.round(totalEur*100)/100)}</div>`;
-  } else {
-    active.forEach(i => {
-      const t = getTatankaData(i.partNo);
-      const best = t.find(x=>!x.is_used)||t[0];
-      html += `<div class="part-card">
-        <div class="part-no">${i.partNo}</div>
-        <div class="part-name">${i.name}</div>
-        <div class="part-price">${formatEur(i.askingPrice)}</div>
-        <div class="part-meta">
-          Box: ${i.box} · Qty: ${i.qty} · Condition: ${i.condition||'Not specified'}
-          ${best ? ` · Tatanka ref: ${best.price_sek ? best.price_sek.toLocaleString()+' SEK' : 'N/A'}` : ''}
-          ${i.notes ? `<br>Notes: ${i.notes}` : ''}
-        </div>
+  if (type === 'catDetail') {
+    const p = data;
+    const tatankaItems = getTatankaData(p.no);
+    html = `<button class="modal-close" onclick="closeModal()">\u2715</button>
+      <div class="modal-title">${p.name}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);margin-bottom:4px">${p.no}</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:12px">${p.sv} \u00b7 Group ${p.g}</div>
+      ${buildTatankaPanel(tatankaItems, p.no)}
+      <div style="margin-top:14px">
+        <button class="btn btn-primary btn-full" onclick="addFromCatalogue('${p.no.replace(/'/g,"\\\'")}');closeModal()">+ ADD TO INVENTORY</button>
       </div>`;
-    });
-    html += `<div class="total">TOTAL VALUE: ${formatEur(Math.round(totalEur*100)/100)}</div>`;
   }
 
-  html += '</body></html>';
-  const blob = new Blob([html], {type:'text/html'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `volvo_c3_parts_${mode}_${Date.now()}.html`;
-  a.click();
-  showToast('Catalogue exported!', 'success');
+  else if (type === 'unknownForm') {
+    html = `<button class="modal-close" onclick="closeModal()">\u2715</button>
+      <div class="modal-title">\u2753 ADD UNKNOWN PART</div>
+      <div class="fg"><label>Description (optional)</label><input type="text" id="unknownName" placeholder="What do you think it might be?"></div>
+      <div class="row2">
+        <div class="fg"><label>Box <span class="req">*</span></label><input type="text" id="unknownBox" placeholder="Box number"></div>
+        <div class="fg"><label>Qty</label><input type="number" id="unknownQty" value="1" min="1"></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveUnknownPart()">SAVE TO UNKNOWN PILE</button>`;
+  }
+
+  else if (type === 'soldConfirm') {
+    const item = data;
+    html = `<button class="modal-close" onclick="closeModal()">\u2715</button>
+      <div class="modal-title">\ud83d\udcb0 CONFIRM SOLD</div>
+      <div style="font-size:14px;margin-bottom:16px">Mark <b>${item.name}</b> as sold?<br>This will remove it from your active inventory.</div>
+      <div style="background:rgba(82,199,122,0.1);border:1px solid var(--green);border-radius:var(--radius);padding:12px;margin-bottom:16px;text-align:center">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:var(--green)">${formatEur(item.askingPrice * item.qty)}</div>
+        <div style="font-size:12px;color:var(--text2)">\u00d7${item.qty} @ ${formatEur(item.askingPrice)} each</div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-success" style="flex:1" onclick="markSold(${item.id})">\u2713 CONFIRM SOLD</button>
+      </div>`;
+  }
+
+  else if (type === 'editItem') {
+    const item = data;
+    html = `<button class="modal-close" onclick="closeModal()">\u2715</button>
+      <div class="modal-title">\u270f\ufe0f EDIT PART</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px">${item.name}</div>
+      <div class="row2">
+        <div class="fg"><label>Box</label><input type="text" id="editBox" value="${item.box||''}"></div>
+        <div class="fg"><label>Qty</label><input type="number" id="editQty" value="${item.qty||1}" min="1"></div>
+      </div>
+      <div class="fg"><label>Asking Price (EUR)</label><input type="number" id="editPrice" value="${item.askingPrice||0}" step="0.01"></div>
+      <div class="fg">
+        <label>Condition</label>
+        <div class="condition-btns">
+          <button class="cond-btn${item.condition==='good'?' active-good':''}" data-cond="good" onclick="setCondition('good',this)">\u2705 Good</button>
+          <button class="cond-btn${item.condition==='fair'?' active-fair':''}" data-cond="fair" onclick="setCondition('fair',this)">\u26a0\ufe0f Fair</button>
+          <button class="cond-btn${item.condition==='poor'?' active-poor':''}" data-cond="poor" onclick="setCondition('poor',this)">\u274c Poor</button>
+        </div>
+      </div>
+      <div class="fg"><label>Notes</label><textarea id="editNotes">${item.notes||''}</textarea></div>
+      <button class="btn btn-primary btn-full" onclick="saveEditItem(${item.id})">SAVE CHANGES</button>`;
+  }
+
+  else if (type === 'customPart') {
+    html = `<button class="modal-close" onclick="closeModal()">\u2715</button>
+      <div class="modal-title">\u2795 ADD CUSTOM PART</div>
+      <div class="fg"><label>Part Name <span class="req">*</span></label><input type="text" id="customName" placeholder="e.g. Electronic ignition kit"></div>
+      <div class="fg">
+        <label>Category</label>
+        <select id="customCategory">
+          <option value="upgrade">Upgrades & Aftermarket</option>
+          <option value="tool">Tools & Equipment</option>
+          <option value="consumable">Consumables</option>
+          <option value="other">General / Other</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Source URL (optional)</label>
+        <div style="display:flex;gap:8px">
+          <input type="url" id="customUrl" placeholder="https://..." style="flex:1">
+          <button class="btn btn-secondary btn-sm" id="fetchPriceBtn" onclick="fetchSourcePrice()">\ud83d\udd0d Fetch Price</button>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="fg"><label>Source Price (EUR)</label><input type="number" id="customSourcePrice" placeholder="0.00" step="0.01"></div>
+        <div class="fg"><label>My Asking Price (EUR)</label><input type="number" id="customPrice" placeholder="0.00" step="0.01"></div>
+      </div>
+      <div class="row2">
+        <div class="fg"><label>Box <span class="req">*</span></label><input type="text" id="customBox" placeholder="Box number"></div>
+        <div class="fg"><label>Qty</label><input type="number" id="customQty" value="1" min="1"></div>
+      </div>
+      <div class="fg">
+        <label>Photo (optional)</label>
+        <div class="photo-area" style="padding:16px" onclick="document.getElementById('customPhotoInput').click()">
+          <div class="photo-placeholder"><div class="photo-icon" style="font-size:28px">\ud83d\udcf7</div><div class="photo-label">Add photo</div></div>
+        </div>
+        <input type="file" id="customPhotoInput" accept="image/*">
+      </div>
+      <div class="fg"><label>Notes</label><textarea id="customNotes" placeholder="Optional notes..."></textarea></div>
+      <button class="btn btn-primary btn-full" onclick="saveCustomPart()">SAVE CUSTOM PART</button>`;
+  }
+
+  else if (type === 'qrLabelItem') {
+    const item = data;
+    const qrData = `VOLVO-C3|${item.partNo}|${item.name}|BOX:${item.box}|QTY:${item.qty}`;
+    html = `<button class="modal-close" onclick="closeModal()">\u2715</button>
+      <div class="modal-title">\ud83c\udff7\ufe0f QR LABEL</div>
+      <div class="label-preview">
+        <div class="lp-name">${item.name}</div>
+        <div class="lp-no">${item.partNo}</div>
+        <div class="lp-detail">Box ${item.box} \u00b7 \u00d7${item.qty} \u00b7 ${item.condition||'\u2014'} \u00b7 ${formatEur(item.askingPrice)}</div>
+        <div class="lp-qr">${generateQRSVG(qrData, 120)}</div>
+      </div>
+      <div style="margin-top:14px;text-align:center;color:var(--muted);font-size:12px">Use your Niimbot app to print this label.<br>Screenshot and import into Niimbot, or connect via Bluetooth.</div>
+      <button class="btn btn-secondary btn-full" style="margin-top:12px" onclick="printLabel()">\ud83d\udda8\ufe0f PRINT / SAVE LABEL</button>`;
+  }
+
+  else if (type === 'qrLabel') {
+    html = `<button class="modal-close" onclick="closeModal()">\u2715</button>
+      <div class="modal-title">\ud83c\udff7\ufe0f PRINT QR LABELS</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Select what to print labels for:</div>
+      <div class="btn-group" style="flex-direction:column">
+        <button class="btn btn-secondary" onclick="printAllBoxLabels()">\ud83d\udce6 All Box Labels</button>
+        <button class="btn btn-secondary" onclick="printAllPartLabels()">\ud83d\udd27 All Part Labels</button>
+        <button class="btn btn-secondary" onclick="printListedLabels()">\ud83d\udce2 Listed Parts Only</button>
+      </div>`;
+  }
+
+  body.innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('open');
 }
 
-function exportInventoryJSON() {
-  const blob = new Blob([JSON.stringify(INVENTORY,null,2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `volvo_inventory_backup_${Date.now()}.json`;
-  a.click();
-  showToast('Backup saved!', 'success');
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modalOverlay')) return;
+  document.getElementById('modalOverlay').classList.remove('open');
 }
 
-function importInventoryJSON(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (Array.isArray(data)) {
-        INVENTORY = data;
-        saveInventory();
-        renderInventory();
-        renderSummary();
-        showToast('Backup restored!', 'success');
+function refreshItemPrice() { console.warn("refreshItemPrice not implemented"); }
+
+function applyRefreshedPrice() { console.warn("applyRefreshedPrice not implemented"); }
+
+async function fetchSourcePrice() {
+  const url = document.getElementById('customUrl').value.trim();
+  if (!url) { showToast('Enter URL first', 'error'); return; }
+
+  const btn = document.getElementById('fetchPriceBtn');
+  btn.textContent = '\u23f3 Fetching...';
+  btn.disabled = true;
+
+  try {
+    const apiKey = getApiKey();
+    if (!apiKey) { btn.textContent = '\ud83d\udd0d Fetch Price'; btn.disabled = false; return; }
+
+    const response = await fetch(ANTHROPIC_API, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-6',
+        max_tokens: 200,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{
+          role: 'user',
+          content: `Visit this URL and extract the product name and price in EUR: ${url}\
+\
+Return ONLY JSON: {"name":"product name","price":99.99,"currency":"EUR"}`
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const text = (data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
+    const m = text.match(/\\{.*\\}/s);
+    if (m) {
+      const parsed = JSON.parse(m[0]);
+      if (parsed.price) {
+        document.getElementById('customSourcePrice').value = parsed.price;
+        if (parsed.name && !document.getElementById('customName').value) {
+          document.getElementById('customName').value = parsed.name;
+        }
+        // Auto-fill asking price
+        const suggested = Math.round(parsed.price * (SETTINGS.discountIn/100) * 100) / 100;
+        document.getElementById('customPrice').value = suggested;
+        showToast('Price fetched: ' + parsed.price + ' EUR', 'success');
       }
-    } catch(err) { showToast('Invalid backup file', 'error'); }
-  };
-  reader.readAsText(file);
-  input.value = '';
-}
+    }
+  } catch(e) {
+    showToast('Could not fetch price \u2014 enter manually', 'error');
+  }
 
-// ═══════════════════════════════════════════════════════
-// CUSTOM PARTS
-// ═══════════════════════════════════════════════════════
+  btn.textContent = '\ud83d\udd0d Fetch Price';
+  btn.disabled = false;
+}
 
 async function saveCustomPart() {
   const name = document.getElementById('customName').value.trim();
@@ -2516,289 +2778,76 @@ async function saveCustomPart() {
   showToast('Custom part added!', 'success');
 }
 
-async function fetchSourcePrice() {
-  const url = document.getElementById('customUrl').value.trim();
-  if (!url) { showToast('Enter URL first', 'error'); return; }
+function exportCatalogue(mode) {
+  const active = INVENTORY.filter(i => i.status !== 'sold' && !i.isUnknown && i.askingPrice > 0);
+  if (active.length === 0) { showToast('No parts to export', 'error'); return; }
 
-  const btn = document.getElementById('fetchPriceBtn');
-  btn.textContent = '⏳ Fetching...';
-  btn.disabled = true;
+  const date = new Date().toLocaleDateString('en-GB');
+  const totalEur = active.reduce((s,i) => s + i.askingPrice * i.qty, 0);
 
-  try {
-    const apiKey = getApiKey();
-    if (!apiKey) { btn.textContent = '🔍 Fetch Price'; btn.disabled = false; return; }
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Volvo C3 Parts - Sales Catalogue</title>
+  <style>
+    body{font-family:Arial,sans-serif;max-width:900px;margin:0 auto;padding:20px;color:#333}
+    h1{color:#c97b2e;border-bottom:3px solid #c97b2e;padding-bottom:10px}
+    .meta{color:#666;font-size:14px;margin-bottom:20px}
+    table{width:100%;border-collapse:collapse;margin-bottom:20px}
+    th{background:#1a1a1a;color:#e8b84b;padding:10px;text-align:left;font-size:12px}
+    td{padding:9px 10px;border-bottom:1px solid #eee;font-size:13px}
+    tr:nth-child(even)td{background:#f9f9f9}
+    .part-card{border:1px solid #ddd;border-radius:8px;padding:14px;margin-bottom:12px;page-break-inside:avoid}
+    .part-no{font-family:monospace;color:#c97b2e;font-size:12px}
+    .part-name{font-size:16px;font-weight:bold;margin:4px 0}
+    .part-price{color:#27ae60;font-size:18px;font-weight:bold}
+    .part-meta{font-size:12px;color:#666;margin-top:4px}
+    .total{background:#1a1a1a;color:#e8b84b;padding:12px 16px;border-radius:6px;font-size:16px;font-weight:bold;text-align:right}
+    @media print{.no-print{display:none}}
+  </style></head><body>
+  <h1>\ud83d\ude99 Volvo C3 Series \u2014 Parts For Sale</h1>
+  <div class="meta">Generated: ${date} \u00b7 ${active.length} parts \u00b7 Contact for purchase</div>`;
 
-    const response = await fetch(ANTHROPIC_API, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 200,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [{
-          role: 'user',
-          content: `Visit this URL and extract the product name and price in EUR: ${url}\n\nReturn ONLY JSON: {"name":"product name","price":99.99,"currency":"EUR"}`
-        }]
-      })
+  if (mode === 'bulk') {
+    html += `<table><tr><th>Part No.</th><th>Description</th><th>Box</th><th>Qty</th><th>Condition</th><th>Price (EUR)</th></tr>`;
+    active.forEach(i => {
+      html += `<tr><td style="font-family:monospace">${i.partNo}</td><td>${i.name}${i.notes?`<br><small style="color:#999">${i.notes}</small>`:''}</td><td>${i.box}</td><td>${i.qty}</td><td>${i.condition||'\u2014'}</td><td style="color:#27ae60;font-weight:600">${formatEur(i.askingPrice)}</td></tr>`;
     });
-
-    if (!response.ok) throw new Error('API error ' + response.status + ': ' + await response.text());
-    const data = await response.json();
-    const text = (data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
-    const m = text.match(/\{.*\}/s);
-    if (m) {
-      const parsed = JSON.parse(m[0]);
-      if (parsed.price) {
-        document.getElementById('customSourcePrice').value = parsed.price;
-        if (parsed.name && !document.getElementById('customName').value) {
-          document.getElementById('customName').value = parsed.name;
-        }
-        // Auto-fill asking price
-        const suggested = Math.round(parsed.price * (SETTINGS.discountIn/100) * 100) / 100;
-        document.getElementById('customPrice').value = suggested;
-        showToast('Price fetched: ' + parsed.price + ' EUR', 'success');
-      }
-    }
-  } catch(e) {
-    showToast('Could not fetch price — enter manually', 'error');
+    html += `</table><div class="total">TOTAL: ${formatEur(Math.round(totalEur*100)/100)}</div>`;
+  } else {
+    active.forEach(i => {
+      const t = getTatankaData(i.partNo);
+      const best = t.find(x=>!x.is_used)||t[0];
+      html += `<div class="part-card">
+        <div class="part-no">${i.partNo}</div>
+        <div class="part-name">${i.name}</div>
+        <div class="part-price">${formatEur(i.askingPrice)}</div>
+        <div class="part-meta">
+          Box: ${i.box} \u00b7 Qty: ${i.qty} \u00b7 Condition: ${i.condition||'Not specified'}
+          ${best ? ` \u00b7 Tatanka ref: ${best.price_sek ? best.price_sek.toLocaleString()+' SEK' : 'N/A'}` : ''}
+          ${i.notes ? `<br>Notes: ${i.notes}` : ''}
+        </div>
+      </div>`;
+    });
+    html += `<div class="total">TOTAL VALUE: ${formatEur(Math.round(totalEur*100)/100)}</div>`;
   }
 
-  btn.textContent = '🔍 Fetch Price';
-  btn.disabled = false;
+  html += '</body></html>';
+  const blob = new Blob([html], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `volvo_c3_parts_${mode}_${Date.now()}.html`;
+  a.click();
+  showToast('Catalogue exported!', 'success');
 }
 
-// ═══════════════════════════════════════════════════════
-// QR LABELS
-// ═══════════════════════════════════════════════════════
+function openWhatsApp() { console.warn("openWhatsApp not implemented"); }
 
-function showQRModal(mode) { openModal('qrLabel', mode); }
-function showQRForItem(id) {
-  const item = INVENTORY.find(i => i.id === id);
-  if (item) openModal('qrLabelItem', item);
-}
+function shareWhatsApp() { console.warn("shareWhatsApp not implemented"); }
 
 function generateQRSVG(text, size) {
-  // Simple QR code placeholder — in production would use a QR library
+  // Simple QR code placeholder \u2014 in production would use a QR library
   // For now generate a data URL that encodes the text
   const encoded = encodeURIComponent(text);
   return `<img src="https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encoded}" width="${size}" height="${size}" alt="QR">`;
-}
-
-// ═══════════════════════════════════════════════════════
-// MODAL SYSTEM
-// ═══════════════════════════════════════════════════════
-
-function openModal(type, data) {
-  const body = document.getElementById('modalBody');
-  let html = '';
-
-  if (type === 'catDetail') {
-    const p = data;
-    const tatankaItems = getTatankaData(p.no);
-    html = `<button class="modal-close" onclick="closeModal()">✕</button>
-      <div class="modal-title">${p.name}</div>
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);margin-bottom:4px">${p.no}</div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:12px">${p.sv} · Group ${p.g}</div>
-      ${buildTatankaPanel(tatankaItems, p.no)}
-      <div style="margin-top:14px">
-        <button class="btn btn-primary btn-full" onclick="addFromCatalogue('${p.no.replace(/'/g,"\\'")}');closeModal()">+ ADD TO INVENTORY</button>
-      </div>`;
-  }
-
-  else if (type === 'unknownForm') {
-    html = `<button class="modal-close" onclick="closeModal()">✕</button>
-      <div class="modal-title">❓ ADD UNKNOWN PART</div>
-      <div class="fg"><label>Description (optional)</label><input type="text" id="unknownName" placeholder="What do you think it might be?"></div>
-      <div class="row2">
-        <div class="fg"><label>Box <span class="req">*</span></label><input type="text" id="unknownBox" placeholder="Box number"></div>
-        <div class="fg"><label>Qty</label><input type="number" id="unknownQty" value="1" min="1"></div>
-      </div>
-      <button class="btn btn-primary btn-full" onclick="saveUnknownPart()">SAVE TO UNKNOWN PILE</button>`;
-  }
-
-  else if (type === 'soldConfirm') {
-    const item = data;
-    html = `<button class="modal-close" onclick="closeModal()">✕</button>
-      <div class="modal-title">💰 CONFIRM SOLD</div>
-      <div style="font-size:14px;margin-bottom:16px">Mark <b>${item.name}</b> as sold?<br>This will remove it from your active inventory.</div>
-      <div style="background:rgba(82,199,122,0.1);border:1px solid var(--green);border-radius:var(--radius);padding:12px;margin-bottom:16px;text-align:center">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:var(--green)">${formatEur(item.askingPrice * item.qty)}</div>
-        <div style="font-size:12px;color:var(--text2)">×${item.qty} @ ${formatEur(item.askingPrice)} each</div>
-      </div>
-      <div class="btn-group">
-        <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-success" style="flex:1" onclick="markSold(${item.id})">✓ CONFIRM SOLD</button>
-      </div>`;
-  }
-
-  else if (type === 'editItem') {
-    const item = data;
-    html = `<button class="modal-close" onclick="closeModal()">✕</button>
-      <div class="modal-title">✏️ EDIT PART</div>
-      <div style="font-size:14px;font-weight:600;margin-bottom:12px">${item.name}</div>
-      <div class="row2">
-        <div class="fg"><label>Box</label><input type="text" id="editBox" value="${item.box||''}"></div>
-        <div class="fg"><label>Qty</label><input type="number" id="editQty" value="${item.qty||1}" min="1"></div>
-      </div>
-      <div class="fg"><label>Asking Price (EUR)</label><input type="number" id="editPrice" value="${item.askingPrice||0}" step="0.01"></div>
-      <div class="fg">
-        <label>Condition</label>
-        <div class="condition-btns">
-          <button class="cond-btn${item.condition==='good'?' active-good':''}" data-cond="good" onclick="setCondition('good',this)">✅ Good</button>
-          <button class="cond-btn${item.condition==='fair'?' active-fair':''}" data-cond="fair" onclick="setCondition('fair',this)">⚠️ Fair</button>
-          <button class="cond-btn${item.condition==='poor'?' active-poor':''}" data-cond="poor" onclick="setCondition('poor',this)">❌ Poor</button>
-        </div>
-      </div>
-      <div class="fg"><label>Notes</label><textarea id="editNotes">${item.notes||''}</textarea></div>
-      <button class="btn btn-primary btn-full" onclick="saveEditItem(${item.id})">SAVE CHANGES</button>`;
-  }
-
-  else if (type === 'customPart') {
-    html = `<button class="modal-close" onclick="closeModal()">✕</button>
-      <div class="modal-title">➕ ADD CUSTOM PART</div>
-      <div class="fg"><label>Part Name <span class="req">*</span></label><input type="text" id="customName" placeholder="e.g. Electronic ignition kit"></div>
-      <div class="fg">
-        <label>Category</label>
-        <select id="customCategory">
-          <option value="upgrade">Upgrades & Aftermarket</option>
-          <option value="tool">Tools & Equipment</option>
-          <option value="consumable">Consumables</option>
-          <option value="other">General / Other</option>
-        </select>
-      </div>
-      <div class="fg">
-        <label>Source URL (optional)</label>
-        <div style="display:flex;gap:8px">
-          <input type="url" id="customUrl" placeholder="https://..." style="flex:1">
-          <button class="btn btn-secondary btn-sm" id="fetchPriceBtn" onclick="fetchSourcePrice()">🔍 Fetch Price</button>
-        </div>
-      </div>
-      <div class="row2">
-        <div class="fg"><label>Source Price (EUR)</label><input type="number" id="customSourcePrice" placeholder="0.00" step="0.01"></div>
-        <div class="fg"><label>My Asking Price (EUR)</label><input type="number" id="customPrice" placeholder="0.00" step="0.01"></div>
-      </div>
-      <div class="row2">
-        <div class="fg"><label>Box <span class="req">*</span></label><input type="text" id="customBox" placeholder="Box number"></div>
-        <div class="fg"><label>Qty</label><input type="number" id="customQty" value="1" min="1"></div>
-      </div>
-      <div class="fg">
-        <label>Photo (optional)</label>
-        <div class="photo-area" style="padding:16px" onclick="document.getElementById('customPhotoInput').click()">
-          <div class="photo-placeholder"><div class="photo-icon" style="font-size:28px">📷</div><div class="photo-label">Add photo</div></div>
-        </div>
-        <input type="file" id="customPhotoInput" accept="image/*">
-      </div>
-      <div class="fg"><label>Notes</label><textarea id="customNotes" placeholder="Optional notes..."></textarea></div>
-      <button class="btn btn-primary btn-full" onclick="saveCustomPart()">SAVE CUSTOM PART</button>`;
-  }
-
-  else if (type === 'qrLabelItem') {
-    const item = data;
-    const qrData = `VOLVO-C3|${item.partNo}|${item.name}|BOX:${item.box}|QTY:${item.qty}`;
-    html = `<button class="modal-close" onclick="closeModal()">✕</button>
-      <div class="modal-title">🏷️ QR LABEL</div>
-      <div class="label-preview">
-        <div class="lp-name">${item.name}</div>
-        <div class="lp-no">${item.partNo}</div>
-        <div class="lp-detail">Box ${item.box} · ×${item.qty} · ${item.condition||'—'} · ${formatEur(item.askingPrice)}</div>
-        <div class="lp-qr">${generateQRSVG(qrData, 120)}</div>
-      </div>
-      <div style="margin-top:14px;text-align:center;color:var(--muted);font-size:12px">Use your Niimbot app to print this label.<br>Screenshot and import into Niimbot, or connect via Bluetooth.</div>
-      <button class="btn btn-secondary btn-full" style="margin-top:12px" onclick="printLabel()">🖨️ PRINT / SAVE LABEL</button>`;
-  }
-
-  else if (type === 'qrLabel') {
-    html = `<button class="modal-close" onclick="closeModal()">✕</button>
-      <div class="modal-title">🏷️ PRINT QR LABELS</div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Select what to print labels for:</div>
-      <div class="btn-group" style="flex-direction:column">
-        <button class="btn btn-secondary" onclick="printAllBoxLabels()">📦 All Box Labels</button>
-        <button class="btn btn-secondary" onclick="printAllPartLabels()">🔧 All Part Labels</button>
-        <button class="btn btn-secondary" onclick="printListedLabels()">📢 Listed Parts Only</button>
-      </div>`;
-  }
-
-
-
-  else if (type === 'confirmPriceRefresh') {
-    const { item, newPrice, source } = data;
-    html = `<button class="modal-close" onclick="closeModal()">✕</button>
-      <div class="modal-title">↻ REFRESH PRICE</div>
-      <div style="font-size:14px;font-weight:600;margin-bottom:12px">${item.name}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px">CURRENT</div>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;color:var(--text)">${formatEur(item.askingPrice)}</div>
-        </div>
-        <div style="background:rgba(82,199,122,0.1);border:1px solid var(--green);border-radius:var(--radius);padding:12px;text-align:center">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px">NEW (from ${source})</div>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;color:var(--green)">${formatEur(Math.round(newPrice*100)/100)}</div>
-        </div>
-      </div>
-      <div class="btn-group">
-        <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Keep Old</button>
-        <button class="btn btn-primary" style="flex:1" onclick="applyRefreshedPrice(${item.id}, ${newPrice})">✓ USE NEW PRICE</button>
-      </div>`;
-  }
-
-  else if (type === 'whatsappShare') {
-    const { msg, item } = data;
-    const hasPhoto = !!item.photo;
-    html = `<button class="modal-close" onclick="closeModal()">✕</button>
-      <div class="modal-title" style="color:#25D366">💬 SHARE ON WHATSAPP</div>
-      <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:12px;margin-bottom:16px;font-size:13px;line-height:1.8;white-space:pre-wrap">${msg.replace(/\*/g,'<b>').replace(/\*/g,'</b>')}</div>
-      ${hasPhoto ? `
-      <div style="background:rgba(37,211,102,0.08);border:1px solid #25D366;border-radius:var(--radius);padding:10px;margin-bottom:14px;font-size:12px;color:#25D366">
-        📋 Message copied to clipboard.<br>
-        <span style="color:var(--text2)">In WhatsApp: choose contact → tap the attachment button → Photo → paste message in text field.</span>
-      </div>` : ''}
-      <div class="btn-group">
-        <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-full" style="flex:2;background:#25D366;color:#000;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600" onclick="openWhatsApp(\`${encodeURIComponent(msg)}\`)">OPEN WHATSAPP →</button>
-      </div>`;
-  }
-
-  body.innerHTML = html;
-  document.getElementById('modalOverlay').classList.add('open');
-}
-
-function applyRefreshedPrice(id, price) {
-  const item = INVENTORY.find(i => i.id === id);
-  if (!item) return;
-  item.askingPrice = Math.round(price * 100) / 100;
-  item.priceRefreshedDate = new Date().toISOString();
-  saveInventory();
-  closeModal();
-  renderInventory();
-  showToast('Price updated to ' + formatEur(item.askingPrice), 'success');
-}
-
-function openWhatsApp(encodedMsg) {
-  closeModal();
-  window.location.href = 'whatsapp://send?text=' + encodedMsg;
-}
-
-function closeModal(e) {
-  if (e && e.target !== document.getElementById('modalOverlay')) return;
-  document.getElementById('modalOverlay').classList.remove('open');
-}
-
-function addFromCatalogue(partNo) {
-  const part = (typeof PARTS_DB !== 'undefined') ? PARTS_DB.find(p => p.no === partNo) : null;
-  if (!part) return;
-  const tatankaItems = getTatankaData(partNo);
-  selectedGuess = {
-    name: part.name, sv: part.sv, no: part.no,
-    group: part.g, confidence: 100, tatanka: tatankaItems
-  };
-  showScreen('identify');
-  showStep(3);
-  showConfirmStep();
 }
 
 function printLabel() {
@@ -2821,518 +2870,30 @@ function printListedLabels() {
   closeModal();
 }
 
-// ═══════════════════════════════════════════════════════
-// API KEY MANAGEMENT
-// ═══════════════════════════════════════════════════════
-
-function getApiKey() {
-  return localStorage.getItem(API_KEY_STORAGE) || null;
-}
-
-function promptApiKey(callback) {
-  const body = document.getElementById('modalBody');
-  body.innerHTML = `
-    <div class="modal-title">🔑 API KEY REQUIRED</div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">
-      Enter your Anthropic API key to enable photo identification.<br>
-      It is stored only on this device and never shared.
-    </div>
-    <div class="fg">
-      <label>Anthropic API Key</label>
-      <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
-    </div>
-    <div style="margin-top:4px;margin-bottom:16px">
-      <a href="https://console.anthropic.com/keys" target="_blank" 
-         style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--blue)">
-        Get your key at console.anthropic.com →
-      </a>
-    </div>
-    <div class="btn-group">
-      <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" style="flex:1" onclick="saveApiKey('${callback}')">SAVE & CONTINUE</button>
-    </div>`;
-  document.getElementById('modalOverlay').classList.add('open');
-}
-
-function saveApiKey(callback) {
-  const val = document.getElementById('apiKeyInput').value.trim();
-  if (!val || !val.startsWith('sk-')) {
-    showToast('Invalid key — should start with sk-', 'error');
-    return;
-  }
-  localStorage.setItem(API_KEY_STORAGE, val);
-  closeModal();
-  showToast('API key saved ✓', 'success');
-  updateApiKeyStatus();
-  if (callback === 'analyze') analyzePhoto();
-}
-
-function clearApiKey() {
-  localStorage.removeItem(API_KEY_STORAGE);
-  showToast('API key cleared', 'success');
-}
-
-// ═══════════════════════════════════════════════════════
-// TOAST
-// ═══════════════════════════════════════════════════════
-
-function showToast(msg, type) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show' + (type ? ' ' + type : '');
-  setTimeout(() => t.className = 'toast', 3000);
-}
-
-// ═══════════════════════════════════════════════════════
-// FLOATING ADD CUSTOM BUTTON
-// ═══════════════════════════════════════════════════════
-
-// Add custom part button in inventory screen header area
-document.getElementById('screen-inventory').insertAdjacentHTML('afterbegin',
-  `<div style="display:flex;gap:8px;margin-bottom:12px">
-    <button class="btn btn-secondary btn-sm" onclick="openModal('customPart')">➕ Custom Part</button>
-    <button class="btn btn-secondary btn-sm" onclick="exportCatalogue('bulk')">📄 Export</button>
-  </div>`
-);
-
-
-
-
-// ═══════════════════════════════════════════════════════
-// REFRESH PRICE
-// ═══════════════════════════════════════════════════════
-
-async function refreshItemPrice(id) {
+function showQRForItem(id) {
   const item = INVENTORY.find(i => i.id === id);
-  if (!item) return;
-
-  const apiKey = getApiKey();
-  if (!apiKey) { promptApiKey('none'); return; }
-
-  showToast('Fetching current price...', '');
-
-  try {
-    let newPrice = null;
-    let source = '';
-
-    // Case 1: Custom part with source URL
-    if (item.isCustom && item.sourceUrl) {
-      const resp = await fetch(ANTHROPIC_API, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 150,
-          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-          messages: [{
-            role: 'user',
-            content: 'Visit ' + item.sourceUrl + ' and find the current price in EUR. Return ONLY JSON: {"price":99.99,"currency":"EUR","name":"product name"}'
-          }]
-        })
-      });
-      if (!resp.ok) throw new Error('API ' + resp.status);
-      const data = await resp.json();
-      const text = (data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
-      const m = text.match(/\{[^}]+\}/);
-      if (m) {
-        const parsed = JSON.parse(m[0]);
-        if (parsed.price) { newPrice = parseFloat(parsed.price); source = 'source URL'; }
-      }
-    }
-
-    // Case 2: Tatanka part — re-fetch Tatanka page
-    else if (item.partNo && !item.isCustom) {
-      const tatankaItems = getTatankaData(item.partNo);
-      const best = tatankaItems.find(t=>!t.is_used) || tatankaItems[0];
-      if (best?.product_url) {
-        const resp = await fetch(ANTHROPIC_API, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true'
-          },
-          body: JSON.stringify({
-            model: 'claude-haiku-4-5-20251001',
-            max_tokens: 150,
-            tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-            messages: [{
-              role: 'user',
-              content: 'Visit ' + best.product_url + ' and find the current price in SEK. Return ONLY JSON: {"price_sek":299,"stock":"in_stock"}'
-            }]
-          })
-        });
-        if (!resp.ok) throw new Error('API ' + resp.status);
-        const data = await resp.json();
-        const text = (data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
-        const m = text.match(/\{[^}]+\}/);
-        if (m) {
-          const parsed = JSON.parse(m[0]);
-          if (parsed.price_sek) {
-            const eur = sekToEur(parsed.price_sek);
-            const isOut = parsed.stock === 'out_of_stock' || parsed.stock === 'temp_finished';
-            const discount = isOut ? SETTINGS.discountOut : SETTINGS.discountIn;
-            newPrice = Math.round(eur * (discount/100) * 100) / 100;
-            source = 'Tatanka';
-          }
-        }
-      }
-    }
-
-    // Case 3: Upgrade/aftermarket — web search for current price
-    else {
-      const resp = await fetch(ANTHROPIC_API, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 150,
-          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-          messages: [{
-            role: 'user',
-            content: 'Search for current price of "' + item.name + '" Volvo C3 part. Return ONLY JSON: {"price_eur":29.99,"source":"shop name"} or {"price_eur":null} if not found.'
-          }]
-        })
-      });
-      if (!resp.ok) throw new Error('API ' + resp.status);
-      const data = await resp.json();
-      const text = (data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
-      const m = text.match(/\{[^}]+\}/);
-      if (m) {
-        const parsed = JSON.parse(m[0]);
-        if (parsed.price_eur) { newPrice = parseFloat(parsed.price_eur) * 0.7; source = parsed.source || 'web'; }
-      }
-    }
-
-    if (newPrice && newPrice > 0) {
-      openModal('confirmPriceRefresh', { item, newPrice, source });
-    } else {
-      showToast('Could not find current price online', 'error');
-    }
-
-  } catch(e) {
-    showToast('Price refresh failed: ' + e.message, 'error');
-  }
+  if (item) openModal('qrLabelItem', item);
 }
 
-// ═══════════════════════════════════════════════════════
-// WHATSAPP SHARE
-// ═══════════════════════════════════════════════════════
+function showQRModal(mode) { openModal('qrLabel', mode); }
 
-function shareWhatsApp(id) {
-  const item = INVENTORY.find(i => i.id === id);
-  if (!item) return;
+function addToBulkQueue() { console.warn("addToBulkQueue not implemented"); }
 
-  const condMap = { good: 'Good ✅', fair: 'Fair ⚠️', poor: 'Poor ❌' };
-  const cond = condMap[item.condition] || 'Not specified';
-  const price = formatEur(item.askingPrice);
-  const sek = item.askingPrice ? '(' + Math.round(item.askingPrice / SETTINGS.rate).toLocaleString() + ' SEK)' : '';
+function removeBulkItem() { console.warn("removeBulkItem not implemented"); }
 
-  const lines = [
-    '🔧 *' + item.name + '*',
-    item.partNo ? 'Part no: ' + item.partNo : '',
-    'Condition: ' + cond,
-    '',
-    '💶 Asking price: *' + price + '* ' + sek,
-    item.notes ? '\nNotes: ' + item.notes : '',
-  ].filter(l => l !== null && l !== undefined);
+function renderBulkQueue() { console.warn("renderBulkQueue not implemented"); }
 
-  const msg = lines.join('\n').trim();
+function analyzeBulkQueue() { console.warn("analyzeBulkQueue not implemented"); }
 
-  if (item.photo) {
-    // Copy message to clipboard and open WhatsApp
-    // User needs to paste the message — WhatsApp URL scheme can't attach photos
-    navigator.clipboard.writeText(msg).then(() => {
-      openModal('whatsappShare', { msg, item });
-    }).catch(() => {
-      // Fallback if clipboard not available
-      openModal('whatsappShare', { msg, item });
-    });
-  } else {
-    // No photo — open WhatsApp directly with pre-filled message
-    const url = 'whatsapp://send?text=' + encodeURIComponent(msg);
-    window.open(url, '_blank');
-  }
-}
+function analyzeSingleBulkItem() { console.warn("analyzeSingleBulkItem not implemented"); }
 
-// ═══════════════════════════════════════════════════════
-// BULK MODE
-// ═══════════════════════════════════════════════════════
+function renderBulkReview() { console.warn("renderBulkReview not implemented"); }
 
-let bulkQueue = []; // [{id, photo, status:'pending'|'analyzing'|'done'|'error', result}]
+function saveAllBulk() { console.warn("saveAllBulk not implemented"); }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const bc = document.getElementById('bulkCameraInput');
-  const bg = document.getElementById('bulkGalleryInput');
-  if (bc) bc.addEventListener('change', e => addToBulkQueue(e.target.files));
-  if (bg) bg.addEventListener('change', e => addToBulkQueue(e.target.files));
-});
-
-async function addToBulkQueue(files) {
-  if (!files || files.length === 0) return;
-  for (const file of files) {
-    const compressed = await compressImage(file, 1000, 0.8);
-    bulkQueue.push({
-      id: Date.now() + Math.random(),
-      photo: compressed.b64,
-      dataUrl: compressed.dataUrl,
-      status: 'pending',
-      result: null,
-      box: '',
-      qty: 1,
-      price: '',
-      condition: ''
-    });
-  }
-  renderBulkQueue();
-  document.getElementById('bulkAnalyzeBtn').disabled = false;
-  document.getElementById('bulkCount').textContent = bulkQueue.length + ' queued';
-  // Flash the photo area
-  const area = document.getElementById('bulkPhotoArea');
-  area.classList.add('has-photo');
-  area.innerHTML = `<img src="${bulkQueue[bulkQueue.length-1].dataUrl}" alt="">`;
-  setTimeout(() => {
-    area.classList.remove('has-photo');
-    area.innerHTML = `<div class="photo-placeholder"><div class="photo-icon">📷</div><div class="photo-label">TAP TO ADD MORE</div><div class="photo-sublabel">${bulkQueue.length} photo${bulkQueue.length>1?'s':''} queued</div></div>`;
-    area.onclick = () => document.getElementById('bulkCameraInput').click();
-  }, 800);
-}
-
-function renderBulkQueue() {
-  const el = document.getElementById('bulkQueue');
-  if (bulkQueue.length === 0) { el.innerHTML = ''; return; }
-  el.innerHTML = bulkQueue.map((item, i) => {
-    const icon = item.status === 'pending' ? '⏳' : item.status === 'analyzing' ? '🔍' : item.status === 'done' ? '✅' : '❌';
-    const name = item.result ? item.result[0]?.name || '—' : item.status === 'analyzing' ? 'Analyzing...' : 'Pending';
-    return `<div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px">
-      <img src="${item.dataUrl}" style="width:44px;height:44px;border-radius:5px;object-fit:cover;flex-shrink:0">
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${icon} ${name}</div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">Photo ${i+1}</div>
-      </div>
-      <button onclick="removeBulkItem(${i})" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px">✕</button>
-    </div>`;
-  }).join('');
-}
-
-function removeBulkItem(i) {
-  bulkQueue.splice(i, 1);
-  renderBulkQueue();
-  document.getElementById('bulkCount').textContent = bulkQueue.length + ' queued';
-  if (bulkQueue.length === 0) document.getElementById('bulkAnalyzeBtn').disabled = true;
-}
-
-async function analyzeBulkQueue() {
-  const apiKey = getApiKey();
-  if (!apiKey) { promptApiKey('none'); return; }
-
-  const pending = bulkQueue.filter(i => i.status === 'pending');
-  if (pending.length === 0) { showToast('Nothing to analyze', 'error'); return; }
-
-  document.getElementById('bulkAnalyzeBtn').disabled = true;
-  document.getElementById('bulkAnalyzeBtn').textContent = '⏳ Analyzing...';
-  showToast('Analyzing ' + pending.length + ' parts in parallel...', 'success');
-
-  // Fire all API calls simultaneously
-  const promises = pending.map(item => analyzeSingleBulkItem(item, apiKey));
-  await Promise.allSettled(promises);
-
-  document.getElementById('bulkAnalyzeBtn').textContent = '🔍 ANALYZE ALL';
-  renderBulkQueue();
-  renderBulkReview();
-  document.getElementById('bulkReview').style.display = 'block';
-  showToast('Analysis complete!', 'success');
-}
-
-async function analyzeSingleBulkItem(item, apiKey) {
-  item.status = 'analyzing';
-  renderBulkQueue();
-
-  try {
-    // Try OCR first
-    const ocr = await detectPartNumber(item.photo, '');
-    if (ocr) {
-      item.result = [ocr];
-      item.status = 'done';
-      if (ocr.tatanka) {
-        const suggested = getSuggestedPrice(ocr.tatanka);
-        if (suggested) item.price = suggested.toFixed(2);
-      }
-      return;
-    }
-
-    // Full AI analysis
-    const prompt = `You are an expert on Volvo C3 military vehicles (C303, C304, C306, TGB 11/13/20).
-First read any text or part numbers visible in the image, then identify the part.
-Return ONLY a JSON array of 1 best guess: [{"name":"English name","sv":"Swedish name","no":"part number","group":"group number","confidence":85,"reason":"one sentence, mention any part numbers read from image"}]`;
-
-    const resp = await fetch(ANTHROPIC_API, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 300,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: item.photo } },
-            { type: 'text', text: prompt }
-          ]
-        }]
-      })
-    });
-
-    if (!resp.ok) throw new Error('API ' + resp.status);
-    const data = await resp.json();
-    let text = (data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
-    const m = text.match(/\[\s*\{[\s\S]*?\}\s*\]/);
-    if (!m) throw new Error('No JSON');
-    let guesses = JSON.parse(m[0]);
-    // Enrich with PARTS_DB and Tatanka
-    guesses = guesses.map(g => {
-      const dbMatch = typeof PARTS_DB !== 'undefined' ?
-        PARTS_DB.find(p => p.no === g.no || p.no.split('-')[0] === g.no.split('-')[0]) : null;
-      if (dbMatch) { g.name = g.name||dbMatch.name; g.sv = g.sv||dbMatch.sv; g.no = g.no||dbMatch.no; }
-      g.tatanka = getTatankaData(g.no);
-      return g;
-    });
-    item.result = guesses;
-    item.status = 'done';
-    // Auto-suggest price
-    if (guesses[0]?.tatanka) {
-      const suggested = getSuggestedPrice(guesses[0].tatanka);
-      if (suggested) item.price = suggested.toFixed(2);
-    }
-  } catch(e) {
-    item.status = 'error';
-    item.errorMsg = e.message;
-  }
-}
-
-function renderBulkReview() {
-  const el = document.getElementById('bulkReviewList');
-  const done = bulkQueue.filter(i => i.status === 'done' && i.result);
-  if (done.length === 0) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">No results yet.</div>'; return; }
-
-  el.innerHTML = done.map((item, i) => {
-    const g = item.result[0];
-    const thumb = g?.tatanka?.[0]?.image_local ?
-      `<img src="${g.tatanka[0].image_local}" style="width:48px;height:48px;border-radius:5px;object-fit:cover;border:1px solid var(--border)">` :
-      `<img src="${item.dataUrl}" style="width:48px;height:48px;border-radius:5px;object-fit:cover;border:1px solid var(--border)">`;
-    return `<div style="border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:10px;background:var(--surface2)">
-      <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:8px">
-        ${thumb}
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600">${g?.name||'Unknown'}</div>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent)">${g?.no||'—'}</div>
-          <div style="font-size:11px;color:var(--muted)">${g?.reason||''}</div>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-        <div><label style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);display:block;margin-bottom:3px">BOX *</label>
-          <input type="text" placeholder="Box #" value="${item.box}" oninput="bulkQueue.filter(x=>x.status==='done')[${i}].box=this.value" style="padding:6px 8px;font-size:14px"></div>
-        <div><label style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);display:block;margin-bottom:3px">QTY</label>
-          <input type="number" value="${item.qty||1}" min="1" oninput="bulkQueue.filter(x=>x.status==='done')[${i}].qty=parseInt(this.value)||1" style="padding:6px 8px;font-size:14px"></div>
-        <div><label style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);display:block;margin-bottom:3px">PRICE EUR</label>
-          <input type="number" value="${item.price||''}" placeholder="0.00" step="0.01" oninput="bulkQueue.filter(x=>x.status==='done')[${i}].price=this.value" style="padding:6px 8px;font-size:14px"></div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-async function saveAllBulk() {
-  const done = bulkQueue.filter(i => i.status === 'done' && i.result);
-  const missing = done.filter(i => !i.box);
-  if (missing.length > 0) { showToast('Fill in box numbers for all parts', 'error'); return; }
-
-  let saved = 0;
-  for (const item of done) {
-    const g = item.result[0];
-    INVENTORY.push({
-      id: Date.now() + Math.random(),
-      partNo: g?.no || '',
-      name: g?.name || 'Unknown',
-      nameSv: g?.sv || '',
-      group: g?.group || '',
-      box: item.box,
-      qty: item.qty || 1,
-      condition: item.condition || null,
-      askingPrice: parseFloat(item.price) || 0,
-      photo: item.dataUrl,
-      status: 'available',
-      addedDate: new Date().toISOString(),
-      isCustom: false,
-      isUnknown: false,
-    });
-    saved++;
-  }
-  saveInventory();
-  bulkQueue = [];
-  renderBulkQueue();
-  document.getElementById('bulkReview').style.display = 'none';
-  document.getElementById('bulkAnalyzeBtn').disabled = true;
-  document.getElementById('bulkCount').textContent = '0 queued';
-  showToast(saved + ' parts saved to inventory!', 'success');
-  showScreen('inventory');
-}
-
-
-
-// ═══════════════════════════════════════════════════════
-// REFRESH PRICE
-// ═══════════════════════════════════════════════════════
-// BOOT
-// ═══════════════════════════════════════════════════════
-
-// Load PARTS_DB — try immediately, then on DOMContentLoaded, then on load
-// This handles all timing scenarios across browsers and PWA modes
-function tryLoadPartsDB() {
-  if (typeof window.PARTS_DB_DATA !== 'undefined' && window.PARTS_DB_DATA.length > 0) {
-    PARTS_DB = window.PARTS_DB_DATA;
-    console.log('PARTS_DB loaded:', PARTS_DB.length, 'parts');
-    return true;
-  }
-  return false;
-}
-
-function bootApp() {
-  tryLoadPartsDB();
-  init();
-  // Re-check after a short delay in case PARTS_DB.js loaded late
-  setTimeout(() => {
-    if (PARTS_DB.length === 0 && tryLoadPartsDB()) {
-      console.log('PARTS_DB late-loaded, refreshing UI');
-      renderCatalogue();
-      updateHeaderStats();
-    }
-  }, 500);
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', bootApp);
-} else {
-  bootApp();
-}
 </script>
 
-<!-- PARTS_DB.js should be included here -->
-<script src="PARTS_DB.js"></script>
+<!-- PARTS_DB and TATANKA_DB are inlined below at build time -->
 
 </body>
 </html>
