@@ -1,40 +1,36 @@
 {
   "461628-0": {
     "group": 25,
-    "diagramPage": 9,
+    "diagramPage": 3,
     "pos": 1,
     "occurrences": [
       {
-        "x": 0.35,
-        "y": 0.88
+        "x": 0.66,
+        "y": 0.63
       }
     ],
     "description": "Exhaust manifold"
   },
   "1378889-8": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 3,
     "pos": 3,
     "occurrences": [
       {
-        "x": 0.5,
-        "y": 0.5
-      },
-      {
-        "x": 0.76,
-        "y": 0.46
+        "x": 0.27,
+        "y": 0.36
       }
     ],
     "description": "Gasket"
   },
   "955524-4": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 3,
     "pos": 4,
     "occurrences": [
       {
-        "x": 0.6,
-        "y": 0.3
+        "x": 0.13,
+        "y": 0.36
       }
     ],
     "description": "Screw"
@@ -49,195 +45,244 @@
         "y": 0.5
       },
       {
-        "x": 0.76,
-        "y": 0.46
+        "x": 0.82,
+        "y": 0.47
       }
     ],
     "description": "Stud"
   },
   "419738-0": {
     "group": 25,
-    "diagramPage": 9,
+    "diagramPage": 3,
     "pos": 6,
     "occurrences": [
       {
-        "x": 0.75,
-        "y": 0.84
+        "x": 0.41,
+        "y": 0.25
       }
     ],
     "description": "Shutter shaft"
   },
   "419566-5": {
     "group": 25,
-    "diagramPage": 7,
+    "diagramPage": 3,
     "pos": 7,
     "occurrences": [
       {
-        "x": 0.82,
-        "y": 0.93
+        "x": 0.38,
+        "y": 0.17
       }
     ],
     "description": "Throttle disc"
   },
   "943781-5": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 3,
     "pos": 8,
     "occurrences": [
       {
-        "x": 0.3,
-        "y": 0.68
+        "x": 0.56,
+        "y": 0.33
       }
     ],
     "description": "Screw"
   },
   "943097-6": {
     "group": 25,
-    "diagramPage": 7,
+    "diagramPage": 3,
     "pos": 9,
     "occurrences": [
       {
-        "x": 0.82,
-        "y": 0.77
+        "x": 0.34,
+        "y": 0.44
       }
     ],
     "description": "Cap plug"
   },
   "419582-2": {
     "group": 25,
-    "diagramPage": 7,
+    "diagramPage": 3,
     "pos": 10,
     "occurrences": [
       {
-        "x": 0.48,
-        "y": 0.72
+        "x": 0.62,
+        "y": 0.17
       }
     ],
     "description": "Guide"
   },
   "419580-6": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 3,
     "pos": 11,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.69,
+        "y": 0.17
+      }
+    ],
     "description": "Spring"
   },
   "419749-7": {
     "group": 25,
-    "diagramPage": 7,
+    "diagramPage": 3,
     "pos": 12,
     "occurrences": [
       {
-        "x": 0.55,
-        "y": 0.7
-      },
-      {
-        "x": 0.42,
-        "y": 0.48
+        "x": 0.77,
+        "y": 0.17
       }
     ],
     "description": "Lever"
   },
   "943780-7": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 3,
     "pos": 13,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.82,
+        "y": 0.29
+      }
+    ],
     "description": "Lock washer"
   },
   "19873-9": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 3,
     "pos": 14,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.87,
+        "y": 0.17
+      }
+    ],
     "description": "Nut"
   },
   "952075-0": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 3,
     "pos": 15,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.12,
+        "y": 0.48
+      }
+    ],
     "description": "Plug"
   },
   "461080-4": {
     "group": 25,
-    "diagramPage": 7,
+    "diagramPage": 5,
     "pos": 4,
     "occurrences": [
       {
-        "x": 0.13,
-        "y": 0.84
+        "x": 0.62,
+        "y": 0.3
       }
     ],
     "description": "Nipple"
   },
   "191026-4": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 3,
     "pos": 17,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.16,
+        "y": 0.43
+      },
+      {
+        "x": 0.58,
+        "y": 0.42
+      }
+    ],
     "description": "Plug"
   },
   "945467-9": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 3,
     "pos": 18,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.72,
+        "y": 0.41
+      },
+      {
+        "x": 0.09,
+        "y": 0.71
+      }
+    ],
     "description": "Lock nut"
   },
   "418408-1": {
     "group": 25,
-    "diagramPage": 7,
+    "diagramPage": 3,
     "pos": 20,
     "occurrences": [
       {
-        "x": 0.27,
-        "y": 0.67
-      },
-      {
-        "x": 0.4,
-        "y": 0.67
-      },
-      {
-        "x": 0.57,
-        "y": 0.57
-      },
-      {
-        "x": 0.6,
-        "y": 0.65
+        "x": 0.52,
+        "y": 0.68
       }
     ],
     "description": "Guide sleeve"
   },
   "953243-3": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 3,
     "pos": 22,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.55,
+        "y": 0.62
+      }
+    ],
     "description": "Stud"
   },
   "419401-5": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 3,
     "pos": 23,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.76,
+        "y": 0.43
+      }
+    ],
     "description": "Washer"
   },
   "941907-8": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 9,
     "pos": 52,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.63,
+        "y": 0.08
+      }
+    ],
     "description": "Spring washer"
   },
   "461676-9": {
     "group": 25,
-    "diagramPage": 9,
+    "diagramPage": 5,
     "pos": 1,
     "occurrences": [
       {
-        "x": 0.35,
-        "y": 0.88
+        "x": 0.28,
+        "y": 0.39
+      }
+    ],
+    "description": "Inlet pipe"
+  },
+  "461675": {
+    "group": 25,
+    "diagramPage": 5,
+    "pos": 2,
+    "occurrences": [
+      {
+        "x": 0.3,
+        "y": 0.39
       }
     ],
     "description": "Inlet pipe"
@@ -260,8 +305,8 @@
     "pos": 6,
     "occurrences": [
       {
-        "x": 0.78,
-        "y": 0.35
+        "x": 0.82,
+        "y": 0.36
       }
     ],
     "description": "Nipple"
@@ -280,31 +325,31 @@
   },
   "461034-1": {
     "group": 25,
-    "diagramPage": 9,
+    "diagramPage": 5,
     "pos": 8,
     "occurrences": [
       {
-        "x": 0.72,
-        "y": 0.81
+        "x": 0.28,
+        "y": 0.68
       }
     ],
     "description": "Exhaust manifold, front"
   },
   "461035-8": {
     "group": 25,
-    "diagramPage": 9,
+    "diagramPage": 5,
     "pos": 9,
     "occurrences": [
       {
-        "x": 0.72,
-        "y": 0.79
+        "x": 0.58,
+        "y": 0.65
       }
     ],
     "description": "Exhaust manifold"
   },
   "643837-8": {
     "group": 25,
-    "diagramPage": 9,
+    "diagramPage": 7,
     "pos": 1,
     "occurrences": [
       {
@@ -316,37 +361,46 @@
   },
   "3531326-1": {
     "group": 25,
-    "diagramPage": 3,
+    "diagramPage": 7,
     "pos": 2,
     "occurrences": [
       {
-        "x": 0.22,
-        "y": 0.35
+        "x": 0.18,
+        "y": 0.77
+      },
+      {
+        "x": 0.3,
+        "y": 0.77
+      },
+      {
+        "x": 0.15,
+        "y": 0.93
       }
     ],
     "description": "Gasket"
   },
   "953259-9": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 3,
     "occurrences": [
       {
-        "x": 0.5,
-        "y": 0.5
-      },
-      {
-        "x": 0.76,
-        "y": 0.46
+        "x": 0.2,
+        "y": 0.74
       }
     ],
     "description": "Stud"
   },
   "191894-5": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 14,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.31,
+        "y": 0.47
+      }
+    ],
     "description": "Nut"
   },
   "643956-6": {
@@ -356,89 +410,109 @@
     "occurrences": [
       {
         "x": 0.82,
-        "y": 0.87
+        "y": 0.86
       }
     ],
     "description": "Bracket"
   },
   "944008-2": {
     "group": 25,
-    "diagramPage": 3,
+    "diagramPage": 7,
     "pos": 6,
     "occurrences": [
       {
-        "x": 0.42,
-        "y": 0.24
+        "x": 0.82,
+        "y": 0.83
       }
     ],
     "description": "Clamp"
   },
   "940186-0": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 7,
     "occurrences": [
       {
-        "x": 0.38,
-        "y": 0.55
+        "x": 0.82,
+        "y": 0.92
       }
     ],
     "description": "Screw"
   },
   "960141-0": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 8,
     "occurrences": [
       {
-        "x": 0.3,
-        "y": 0.68
+        "x": 0.82,
+        "y": 0.8
+      },
+      {
+        "x": 0.82,
+        "y": 0.89
       }
     ],
     "description": "Washer"
   },
   "955826-3": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 9,
     "pos": 53,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.67,
+        "y": 0.08
+      }
+    ],
     "description": "Nut"
   },
   "1568514-2": {
     "group": 25,
-    "diagramPage": 3,
+    "diagramPage": 7,
     "pos": 10,
     "occurrences": [
       {
-        "x": 0.63,
-        "y": 0.16
-      },
-      {
-        "x": 0.12,
-        "y": 0.67
+        "x": 0.48,
+        "y": 0.73
       }
     ],
     "description": "Gasket"
   },
   "955535-0": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 11,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.62,
+        "y": 0.72
+      }
+    ],
     "description": "Screw"
   },
   "940097-9": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 38,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.22,
+        "y": 0.33
+      }
+    ],
     "description": "Washer"
   },
   "942336-9": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 24,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.46,
+        "y": 0.24
+      }
+    ],
     "description": "Spring washer"
   },
   "643784-2": {
@@ -459,7 +533,7 @@
     "pos": 16,
     "occurrences": [
       {
-        "x": 0.4,
+        "x": 0.37,
         "y": 0.75
       }
     ],
@@ -467,40 +541,58 @@
   },
   "955528-5": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 17,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.43,
+        "y": 0.62
+      },
+      {
+        "x": 0.58,
+        "y": 0.57
+      }
+    ],
     "description": "Screw"
   },
   "969154-4": {
     "group": 25,
-    "diagramPage": 3,
+    "diagramPage": 7,
     "pos": 18,
     "occurrences": [
       {
-        "x": 0.73,
-        "y": 0.4
+        "x": 0.32,
+        "y": 0.67
       }
     ],
     "description": "Clamp"
   },
   "968356-6": {
     "group": 25,
-    "diagramPage": 3,
+    "diagramPage": 7,
     "pos": 19,
     "occurrences": [
       {
-        "x": 0.54,
-        "y": 0.35
+        "x": 0.62,
+        "y": 0.64
       }
     ],
     "description": "Clamp"
   },
   "955894-1": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 45,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.6,
+        "y": 0.21
+      },
+      {
+        "x": 0.84,
+        "y": 0.11
+      }
+    ],
     "description": "Washer"
   },
   "640134-3": {
@@ -510,16 +602,21 @@
     "occurrences": [
       {
         "x": 0.52,
-        "y": 0.28
+        "y": 0.25
       }
     ],
     "description": "Bracket"
   },
   "940133-2": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 23,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.4,
+        "y": 0.24
+      }
+    ],
     "description": "Screw"
   },
   "643782-6": {
@@ -528,24 +625,38 @@
     "pos": 25,
     "occurrences": [
       {
-        "x": 0.3,
-        "y": 0.22
+        "x": 0.32,
+        "y": 0.21
       }
     ],
     "description": "Stay"
   },
   "955523-6": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 26,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.24,
+        "y": 0.19
+      },
+      {
+        "x": 0.37,
+        "y": 0.09
+      }
+    ],
     "description": "Screw"
   },
   "639330-0": {
     "group": 25,
-    "diagramPage": 3,
+    "diagramPage": 7,
     "pos": 29,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.49,
+        "y": 0.12
+      }
+    ],
     "description": "Bushing"
   },
   "639966-1": {
@@ -555,58 +666,97 @@
     "occurrences": [
       {
         "x": 0.55,
-        "y": 0.3
+        "y": 0.28
       }
     ],
     "description": "Anchorage"
   },
   "955540-0": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 31,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.35,
+        "y": 0.25
+      }
+    ],
     "description": "Screw"
   },
   "950354-1": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 32,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.5,
+        "y": 0.28
+      }
+    ],
     "description": "Lock nut"
   },
   "640138-4": {
     "group": 25,
-    "diagramPage": 3,
+    "diagramPage": 7,
     "pos": 33,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.1,
+        "y": 0.37
+      }
+    ],
     "description": "Heat shield"
   },
   "955510-3": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 34,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.13,
+        "y": 0.29
+      }
+    ],
     "description": "Screw"
   },
   "941906-0": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 35,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.14,
+        "y": 0.31
+      }
+    ],
     "description": "Spring washer"
   },
   "640136-8": {
     "group": 25,
-    "diagramPage": 3,
+    "diagramPage": 7,
     "pos": 36,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.1,
+        "y": 0.54
+      },
+      {
+        "x": 0.62,
+        "y": 0.5
+      }
+    ],
     "description": "Strip clamp"
   },
   "955539-2": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 37,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.24,
+        "y": 0.29
+      }
+    ],
     "description": "Screw"
   },
   "640276-2": {
@@ -615,7 +765,7 @@
     "pos": 39,
     "occurrences": [
       {
-        "x": 0.06,
+        "x": 0.08,
         "y": 0.63
       },
       {
@@ -627,26 +777,52 @@
   },
   "942356-7": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 40,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.1,
+        "y": 0.72
+      },
+      {
+        "x": 0.63,
+        "y": 0.56
+      }
+    ],
     "description": "Washer"
   },
   "955835-4": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 41,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.1,
+        "y": 0.74
+      },
+      {
+        "x": 0.1,
+        "y": 0.76
+      },
+      {
+        "x": 0.68,
+        "y": 0.58
+      },
+      {
+        "x": 0.73,
+        "y": 0.58
+      }
+    ],
     "description": "Nut"
   },
   "643785-9": {
     "group": 25,
-    "diagramPage": 9,
+    "diagramPage": 7,
     "pos": 42,
     "occurrences": [
       {
-        "x": 0.74,
-        "y": 0.64
+        "x": 0.78,
+        "y": 0.65
       }
     ],
     "description": "Exhaust pipe"
@@ -665,16 +841,30 @@
   },
   "940161-3": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 44,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.58,
+        "y": 0.16
+      }
+    ],
     "description": "Screw"
   },
   "403878-2": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 7,
     "pos": 46,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.63,
+        "y": 0.21
+      },
+      {
+        "x": 0.8,
+        "y": 0.19
+      }
+    ],
     "description": "Washer"
   },
   "403877-4": {
@@ -683,12 +873,12 @@
     "pos": 47,
     "occurrences": [
       {
-        "x": 0.72,
-        "y": 0.1
+        "x": 0.74,
+        "y": 0.11
       },
       {
-        "x": 0.79,
-        "y": 0.1
+        "x": 0.8,
+        "y": 0.15
       }
     ],
     "description": "Bushing"
@@ -699,17 +889,22 @@
     "pos": 48,
     "occurrences": [
       {
-        "x": 0.72,
-        "y": 0.2
+        "x": 0.73,
+        "y": 0.19
       }
     ],
     "description": "Spacer sleeve"
   },
   "955525-1": {
     "group": 25,
-    "diagramPage": 5,
+    "diagramPage": 9,
     "pos": 51,
-    "occurrences": [],
+    "occurrences": [
+      {
+        "x": 0.55,
+        "y": 0.08
+      }
+    ],
     "description": "Screw"
   }
 }
