@@ -1499,17 +1499,21 @@ const GROUP_LABELS = {
 function getDiagramBadgeHTML(group, pos, size = 'normal') {
   const [label, emoji] = GROUP_LABELS[group] || ['GRP ' + group, '📐'];
   const isSmall = size === 'small';
-  const fs1 = isSmall ? '8px' : '9px';
-  const fs2 = isSmall ? '10px' : '13px';
-  const fs3 = isSmall ? '7px' : '8px';
   const w = isSmall ? '36px' : '72px';
   const h = isSmall ? '36px' : '72px';
   const br = isSmall ? '4px' : '6px';
-  return `<div style="width:${w};height:${h};border-radius:${br};background:var(--surface3);border:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer">
-    <div style="font-size:${fs2};line-height:1">${emoji}</div>
-    <div style="font-size:${fs1};font-weight:700;color:var(--accent);font-family:'IBM Plex Mono',monospace;line-height:1.2">GRP ${group}</div>
-    <div style="font-size:${fs3};color:var(--muted);font-family:'IBM Plex Mono',monospace;line-height:1.2;text-align:center">${label}</div>
-    ${pos && !isSmall ? `<div style="font-size:7px;color:var(--blue);font-family:'IBM Plex Mono',monospace;margin-top:2px">POS ${pos}</div>` : ''}
+  if (isSmall) {
+    // Small: just emoji + tiny label
+    return `<div style="width:${w};height:${h};border-radius:${br};background:var(--surface3);border:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer">
+      <div style="font-size:13px;line-height:1">${emoji}</div>
+      <div style="font-size:7px;font-weight:700;color:var(--fg);font-family:'IBM Plex Mono',monospace;line-height:1.2;text-align:center">${label}</div>
+    </div>`;
+  }
+  // Normal (72px): label is dominant
+  return `<div style="width:${w};height:${h};border-radius:${br};background:var(--surface3);border:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer">
+    <div style="font-size:10px;line-height:1">${emoji}</div>
+    <div style="font-size:11px;font-weight:800;color:var(--fg);font-family:'IBM Plex Mono',monospace;line-height:1.2;text-align:center">${label}</div>
+    <div style="font-size:8px;color:var(--muted);font-family:'IBM Plex Mono',monospace;line-height:1.2">GRP ${group}${pos ? ' · P'+pos : ''}</div>
   </div>`;
 }
 
