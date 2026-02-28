@@ -985,6 +985,7 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
       <span class="search-icon">🔍</span>
       <input type="text" placeholder="Search parts, numbers, boxes..." id="invSearch" oninput="filterInventory()">
     </div>
+    <div id="invStatsBar" style="display:flex;gap:8px;padding:0 0 10px 0;flex-wrap:wrap"></div>
     <div class="filter-chips" id="invFilterChips">
       <div class="chip active" onclick="setInvFilter('all',this)">All</div>
       <div class="chip" onclick="setInvFilter('available',this)">Available</div>
@@ -1195,7 +1196,7 @@ let currentPhotoBlob = null;
 let extraAngles = [];
 let currentGuesses = [];
 let selectedGuess = null;
-let currentCondition = null;
+let currentCondition = 'fair';
 let identifyAttempt = 0;
 
 // Manual entry state
@@ -1214,6 +1215,15 @@ function showToast(msg, type) {
   t.textContent = msg;
   t.className = 'toast show' + (type ? ' ' + type : '');
   setTimeout(() => t.className = 'toast', 3000);
+}
+
+function copyToClipboard(text, el) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = el.textContent;
+    el.textContent = '✅';
+    el.style.opacity = '1';
+    setTimeout(() => { el.textContent = orig; el.style.opacity = '0.5'; }, 1500);
+  }).catch(() => showToast('Copy failed', 'error'));
 }
 
 function formatEur(eur) {
@@ -1464,6 +1474,43 @@ function getDiagramData(partNo) {
 // e.g. diagram_pages/25_3.jpg = group 25, page 3
 function getDiagramPageURL(group, pageNum) {
   return `diagram_pages/${group}_${pageNum}.jpg`;
+}
+
+const GROUP_LABELS = {
+  20: ['ENGINE', '🔧'], 21: ['ENGINE', '🔧'], 22: ['LUBRICATION', '🔧'],
+  23: ['FUEL', '⛽'], 24: ['FUEL', '⛽'], 25: ['EXHAUST', '💨'],
+  26: ['COOLING', '🌡️'], 27: ['ENGINE CTRL', '🔧'],
+  30: ['ELECTRICAL', '⚡'], 31: ['BATTERY', '⚡'], 32: ['ALTERNATOR', '⚡'],
+  33: ['STARTER', '⚡'], 34: ['IGNITION', '⚡'], 35: ['LIGHTING', '💡'],
+  36: ['ELECTRICAL', '⚡'], 37: ['WIRING', '⚡'], 38: ['INSTRUMENTS', '🎛️'],
+  39: ['RADIO', '📻'],
+  40: ['DRIVETRAIN', '⚙️'], 41: ['CLUTCH', '⚙️'], 43: ['GEARBOX', '⚙️'],
+  45: ['PROP SHAFT', '🔩'], 46: ['AXLES', '🛞'], 48: ['PTO', '⚙️'],
+  50: ['BRAKES', '🛑'], 51: ['BRAKES', '🛑'], 52: ['BRAKE SYS', '🛑'],
+  55: ['PARK BRAKE', '🛑'], 58: ['BRAKE PIPES', '🛑'],
+  60: ['STEERING', '🎯'], 61: ['STEERING', '🎯'], 64: ['STEERING', '🎯'],
+  70: ['FRAME', '🏗️'], 71: ['FRAME', '🏗️'], 72: ['FRONT SUSP', '🏗️'],
+  73: ['REAR SUSP', '🏗️'], 77: ['WHEELS', '🛞'],
+  80: ['BODY', '🚗'], 81: ['BODY', '🚗'], 83: ['DOORS', '🚗'],
+  84: ['WINDOWS', '🚗'], 85: ['INTERIOR', '💺'], 86: ['MUDFLAPS', '🚗'],
+  87: ['HEATING', '🔥'], 88: ['INTERIOR', '💺'],
+};
+
+function getDiagramBadgeHTML(group, pos, size = 'normal') {
+  const [label, emoji] = GROUP_LABELS[group] || ['GRP ' + group, '📐'];
+  const isSmall = size === 'small';
+  const fs1 = isSmall ? '8px' : '9px';
+  const fs2 = isSmall ? '10px' : '13px';
+  const fs3 = isSmall ? '7px' : '8px';
+  const w = isSmall ? '36px' : '72px';
+  const h = isSmall ? '36px' : '72px';
+  const br = isSmall ? '4px' : '6px';
+  return `<div style="width:${w};height:${h};border-radius:${br};background:var(--surface3);border:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer">
+    <div style="font-size:${fs2};line-height:1">${emoji}</div>
+    <div style="font-size:${fs1};font-weight:700;color:var(--accent);font-family:'IBM Plex Mono',monospace;line-height:1.2">GRP ${group}</div>
+    <div style="font-size:${fs3};color:var(--muted);font-family:'IBM Plex Mono',monospace;line-height:1.2;text-align:center">${label}</div>
+    ${pos && !isSmall ? `<div style="font-size:7px;color:var(--blue);font-family:'IBM Plex Mono',monospace;margin-top:2px">POS ${pos}</div>` : ''}
+  </div>`;
 }
 
 
@@ -2544,10 +2591,13 @@ function onSmartSearch(val) {
     const priceHint = best && sekToEur(best.price_sek) ? ` · ~${formatEur(sekToEur(best.price_sek))}` : '';
     const diagData = getDiagramData(p.no);
     const thumbSrc = best?.image_local || null;
-    const thumbIcon = thumbSrc ? '' : (diagData ? '📐' : '🔧');
+    const thumbHTML = thumbSrc
+      ? `<img src="${thumbSrc}" style="width:36px;height:36px;border-radius:4px;object-fit:cover;flex-shrink:0">`
+      : diagData ? getDiagramBadgeHTML(diagData.group, null, 'small')
+      : `<div style="width:36px;height:36px;border-radius:4px;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🔧</div>`;
     return `<div onclick="applyPartFromDB('${p.no.replace(/'/g,"\'")}','${p.name.replace(/'/g,"\'")}','${(p.sv||'').replace(/'/g,"\'")}','${p.g}')"
       style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-      ${thumbSrc ? `<img src="${thumbSrc}" style="width:36px;height:36px;border-radius:4px;object-fit:cover;flex-shrink:0">` : `<div style="width:36px;height:36px;border-radius:4px;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${thumbIcon}</div>`}
+      ${thumbHTML}
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
         <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent)">${p.no}</div>
@@ -2596,15 +2646,46 @@ function applyPartFromDB(no, name, sv, group) {
     phEl.style.display = 'none';
   } else {
     imgEl.style.display = 'none';
-    phEl.style.display = 'flex';
-    // Show 📐 icon if diagram available
-    phEl.textContent = diagData ? '📐' : '🔧';
+    if (diagData) {
+      phEl.style.display = 'none';
+      // Insert badge next to where img would be
+      let badge = document.getElementById('selectedPartDiagThumb');
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'selectedPartDiagThumb';
+        badge.onclick = () => openPartViewer(document.getElementById('manualPartNo').value, document.getElementById('selectedPartName').textContent);
+        imgEl.parentNode.insertBefore(badge, imgEl);
+      }
+      badge.innerHTML = getDiagramBadgeHTML(diagData.group, diagData.pos, 'normal');
+      badge.style.display = '';
+    } else {
+      phEl.style.display = 'flex';
+      phEl.textContent = '🔧';
+      const badge = document.getElementById('selectedPartDiagThumb');
+      if (badge) badge.style.display = 'none';
+    }
   }
   if (badgeEl) badgeEl.style.display = diagData && !myPhoto && !bestT?.image_local ? '' : 'none';
 
   document.getElementById('selectedPartPreview').style.display = 'block';
   partSelected = true;
   selectedGuess = { no, name, sv, group, confidence: 100, tatanka, fromManual: true };
+
+  // Auto-fill asking price from Tatanka if field is empty
+  const priceField = document.getElementById('confirmPrice');
+  if (priceField && (!priceField.value || parseFloat(priceField.value) === 0)) {
+    const tatankaNew = tatanka.find(t => !t.is_used);
+    const tatankaUsed = tatanka.find(t => t.is_used);
+    const ref = tatankaNew || tatankaUsed;
+    if (ref?.price_sek) {
+      const eur = sekToEur(ref.price_sek);
+      // Suggest 40% of new price or 60% of used price as a reasonable asking price
+      const suggested = tatankaNew ? Math.round(eur * 0.4 * 100) / 100 : Math.round(eur * 0.6 * 100) / 100;
+      priceField.value = suggested.toFixed(2);
+      showToast(`💡 Price pre-filled from Tatanka (${tatankaNew ? '40% of new' : '60% of used'})`, 'info');
+    }
+  }
+
   suggestBoxForPart(no);
 }
 
@@ -2878,7 +2959,11 @@ async function savePart() {
 
 function resetIdentify() {
   currentPhoto = null; currentPhotoBlob = null;
-  currentGuesses = []; selectedGuess = null; currentCondition = null;
+  currentGuesses = []; selectedGuess = null; currentCondition = 'fair';
+  // Pre-select Fair condition button
+  document.querySelectorAll('.cond-btn').forEach(b => b.className = 'cond-btn');
+  const fairBtn = document.getElementById('condBtnFair');
+  if (fairBtn) fairBtn.classList.add('active-fair');
   const area = document.getElementById('photoArea');
   area.classList.remove('has-photo');
   area.innerHTML = `<div class="photo-placeholder"><div class="photo-icon">\ud83d\udcf7</div><div class="photo-label">TAP TO TAKE PHOTO</div><div class="photo-sublabel">or choose from gallery</div></div>`;
@@ -2923,8 +3008,32 @@ function renderInventory() {
   const list = document.getElementById('invList');
   if (!list) return;
 
-  let items = [...INVENTORY];
+  // Update stats bar
+  const statsBar = document.getElementById('invStatsBar');
+  if (statsBar) {
+    const active = INVENTORY.filter(i => i.status !== 'sold' && !i.isUnknown);
+    const listed = INVENTORY.filter(i => i.status === 'listed');
+    const unknown = INVENTORY.filter(i => i.isUnknown);
+    const totalAsking = active.reduce((s, i) => s + (i.askingPrice || 0) * (i.qty || 1), 0);
+    const tatankaTotal = active.reduce((s, i) => {
+      const t = getTatankaData(i.partNo);
+      const ref = t.find(x => !x.is_used) || t[0];
+      return s + (ref ? sekToEur(ref.price_sek) * (i.qty || 1) : 0);
+    }, 0);
+    const stat = (icon, val, label) =>
+      `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;white-space:nowrap">
+        <span style="opacity:0.6">${icon} ${label}</span>
+        <span style="font-weight:700;color:var(--accent);margin-left:4px">${val}</span>
+      </div>`;
+    statsBar.innerHTML =
+      stat('📦', active.length, 'parts') +
+      stat('📢', listed.length, 'listed') +
+      (unknown.length ? stat('❓', unknown.length, 'unknown') : '') +
+      stat('💶', formatEur(totalAsking), 'asking') +
+      (tatankaTotal > 0 ? stat('🏷️', formatEur(tatankaTotal), 'tatanka') : '');
+  }
 
+  let items = [...INVENTORY];
   // Apply filter
   if (invFilter === 'available') items = items.filter(i => i.status === 'available' && !i.isUnknown);
   else if (invFilter === 'listed') items = items.filter(i => i.status === 'listed');
@@ -2967,7 +3076,7 @@ function renderInvItem(item) {
   const thumb = myDefaultPhoto
     ? `<img class="inv-thumb" src="${myDefaultPhoto}" alt="" ${thumbClick}>` :
     (bestT?.image_local ? `<img class="inv-thumb" src="${bestT.image_local}" alt="" ${thumbClick}>` :
-    (diagData ? `<div class="inv-thumb-ph" ${thumbClick}>📐</div>` :
+    (diagData ? getDiagramBadgeHTML(diagData.group, diagData.pos, 'small') :
     `<div class="inv-thumb-ph" ${thumbClick}>${item.isUnknown ? '❓' : '🔧'}</div>`));
 
   const cls = item.isUnknown ? 'unknown-item' : 'inv-item';
@@ -2977,7 +3086,10 @@ function renderInvItem(item) {
       ${thumb}
       <div class="inv-info">
         <div class="inv-name">${item.name || 'Unknown Part'}</div>
-        <div class="inv-no">${item.partNo || ''}</div>
+        <div class="inv-no" style="display:flex;align-items:center;gap:6px">
+          <span>${item.partNo || ''}</span>
+          ${item.partNo ? `<span onclick="copyToClipboard('${(item.partNo||'').replace(/'/g,"\\'")}',this)" style="cursor:pointer;opacity:0.5;font-size:10px;user-select:none" title="Copy part number">📋</span>` : ''}
+        </div>
         <div class="inv-meta">
           <span class="badge badge-muted">\ud83d\udce6 Box ${item.box || '\u2014'}</span>
           <span class="badge badge-muted">\u00d7${item.qty || 1}</span>
