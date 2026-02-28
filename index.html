@@ -2290,105 +2290,30 @@ function dvDrawDiagram() {
   canvas.width  = Math.round(img.width * scale);
   canvas.height = Math.round(img.height * scale);
 
-  // Draw image
+  // Draw image cleanly — no dimming, no circles
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-  const occ = _dvState.occurrences;
+  // Hide zoom panel — not used in this approach
+  document.getElementById('dvZoomPanel').style.display = 'none';
+
+  // Show position callout banner
   const posNo = _dvState.posNumber;
-
-  if (occ.length === 0) {
-    // No position data — just show full diagram, hide zoom
-    document.getElementById('dvZoomPanel').style.display = 'none';
-    return;
-  }
-
-  // Dim entire image
-  ctx.fillStyle = 'rgba(0,0,0,0.45)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  // Redraw image with clip to create undimmed center area (show all occurrences undimmed)
-  // For simplicity: just draw highlights over dim
-
-  const activeIdx = _dvState.activeOccurrence;
-
-  // Draw all occurrences
-  occ.forEach((o, i) => {
-    const cx = o.x * canvas.width;
-    const cy = o.y * canvas.height;
-    const r = Math.max(28, canvas.width * 0.045);
-    const isActive = (i === activeIdx) || occ.length >= 6;
-
-    // Bright circle
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fillStyle = isActive ? 'rgba(232,184,75,0.55)' : 'rgba(232,184,75,0.25)';
-    ctx.fill();
-    ctx.strokeStyle = isActive ? '#e8b84b' : 'rgba(232,184,75,0.5)';
-    ctx.lineWidth = isActive ? 3 : 2;
-    ctx.stroke();
-
-    // Instance number badge (for 2-5 occurrences)
-    if (occ.length > 1 && occ.length < 6) {
-      ctx.fillStyle = isActive ? '#e8b84b' : 'rgba(232,184,75,0.6)';
-      ctx.beginPath();
-      ctx.arc(cx + r * 0.7, cy - r * 0.7, r * 0.45, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#000';
-      ctx.font = `bold ${Math.round(r * 0.5)}px IBM Plex Mono, monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(i + 1, cx + r * 0.7, cy - r * 0.7);
+  const occ = _dvState.occurrences;
+  const banner = document.getElementById('dvPosBanner');
+  if (posNo && banner) {
+    const occCount = occ.length;
+    banner.style.display = '';
+    if (occCount > 1) {
+      banner.innerHTML = `Look for <strong>position ${posNo}</strong> on this diagram &nbsp;·&nbsp; appears <strong>${occCount}×</strong>`;
+    } else {
+      banner.innerHTML = `Look for <strong>position ${posNo}</strong> on this diagram`;
     }
-  });
-
-  // Zoom panel for active occurrence (only for ≤5 occurrences)
-  if (occ.length < 6 && occ.length > 0) {
-    const o = occ[activeIdx] || occ[0];
-    dvDrawZoom(img, o.x, o.y, posNo, activeIdx + 1, occ.length);
-  } else {
-    document.getElementById('dvZoomPanel').style.display = 'none';
+  } else if (banner) {
+    banner.style.display = 'none';
   }
 }
 
-function dvDrawZoom(img, fx, fy, posNo, instanceNum, total) {
-  const panel = document.getElementById('dvZoomPanel');
-  const zCanvas = document.getElementById('dvZoomCanvas');
-  const zCtx = zCanvas.getContext('2d');
-
-  const zSize = 180; // panel width in CSS px
-  const cropFrac = 0.30; // crop this fraction of image around the point
-  const srcW = img.width * cropFrac;
-  const srcH = img.height * cropFrac;
-  const srcX = Math.max(0, fx * img.width - srcW / 2);
-  const srcY = Math.max(0, fy * img.height - srcH / 2);
-
-  const aspect = srcW / srcH;
-  zCanvas.width  = 180;
-  zCanvas.height = Math.round(180 / aspect);
-
-  // White bg (diagrams are white)
-  zCtx.fillStyle = '#fff';
-  zCtx.fillRect(0, 0, zCanvas.width, zCanvas.height);
-  zCtx.drawImage(img, srcX, srcY, Math.min(srcW, img.width - srcX), Math.min(srcH, img.height - srcY),
-                 0, 0, zCanvas.width, zCanvas.height);
-
-  // Draw highlight circle in zoom
-  const zScale = zCanvas.width / srcW;
-  const zcx = (fx * img.width - srcX) * zScale;
-  const zcy = (fy * img.height - srcY) * zScale;
-  const zr = Math.max(14, zCanvas.width * 0.12);
-
-  zCtx.beginPath();
-  zCtx.arc(zcx, zcy, zr, 0, Math.PI * 2);
-  zCtx.fillStyle = 'rgba(232,184,75,0.45)';
-  zCtx.fill();
-  zCtx.strokeStyle = '#e8b84b';
-  zCtx.lineWidth = 3;
-  zCtx.stroke();
-
-  panel.style.display = '';
-  document.getElementById('dvZoomLabel').textContent =
-    `🔍 Pos ${posNo}${total > 1 ? ' · ' + instanceNum + '/' + total : ''}`;
-}
+function dvDrawZoom() {} // no-op — zoom replaced by full diagram view
 
 // Open viewer from an inventory item or catalogue entry
 function openPartViewer(partNo, partName) {
@@ -3653,9 +3578,10 @@ function saveAllBulk() { console.warn("saveAllBulk not implemented"); }
 
   <!-- Diagram pane -->
   <div class="dv-pane" id="dvPaneDiagram">
+    <div id="dvPosBanner" style="display:none;background:var(--accent);color:#000;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px;text-align:center;letter-spacing:0.5px"></div>
     <div class="dv-diagram-wrap">
       <canvas id="dvDiagramCanvas" class="dv-diagram-canvas"></canvas>
-      <div class="dv-zoom-panel" id="dvZoomPanel">
+      <div class="dv-zoom-panel" id="dvZoomPanel" style="display:none">
         <div class="dv-zoom-panel-label" id="dvZoomLabel">ZOOM</div>
         <canvas id="dvZoomCanvas"></canvas>
       </div>
