@@ -2355,7 +2355,7 @@ function dvDrawZoom(img, fx, fy, posNo, instanceNum, total) {
   const zCtx = zCanvas.getContext('2d');
 
   const zSize = 180; // panel width in CSS px
-  const cropFrac = 0.18; // crop this fraction of image around the point
+  const cropFrac = 0.30; // crop this fraction of image around the point
   const srcW = img.width * cropFrac;
   const srcH = img.height * cropFrac;
   const srcX = Math.max(0, fx * img.width - srcW / 2);
