@@ -2872,8 +2872,8 @@ function resetIdentify() {
   if (document.getElementById('customSourceUrl')) document.getElementById('customSourceUrl').value = '';
   partSelected = false;
   setEntryMode('catalogue');
-  document.getElementById('confirmPrice').value = '';
-  document.getElementById('confirmNotes').value = '';
+  const cp = document.getElementById('confirmPrice'); if (cp) cp.value = '';
+  const cn = document.getElementById('confirmNotes'); if (cn) cn.value = '';
   document.querySelectorAll('.cond-btn').forEach(b => b.className = 'cond-btn');
   showScreen('identify');
   showStep(1);
