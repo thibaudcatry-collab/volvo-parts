@@ -1570,16 +1570,6 @@ function showScreen(name) {
   if (!screenEl) { console.error('No screen:', name); return; }
   screenEl.classList.add('active');
 
-function updateHeaderStats() {
-  const active = INVENTORY.filter(i => i.status !== 'sold' && !i.isUnknown);
-  const boxes = new Set(active.map(i => i.box)).size;
-  document.getElementById('hPartCount').textContent = active.length;
-  document.getElementById('hBoxCount').textContent = boxes;
-  document.getElementById('settingInvCount').textContent = INVENTORY.length;
-  if (typeof PARTS_DB !== 'undefined') {
-    document.getElementById('settingPartCount').textContent = PARTS_DB.length;
-  }
-}
   const navMap = { bulk: 'identify' };
   const navName = navMap[name] || name;
   const navEl = document.getElementById('nav-' + navName);
@@ -1589,6 +1579,17 @@ function updateHeaderStats() {
   if (name === 'inventory') renderInventory();
   if (name === 'summary') renderSummary();
   if (name === 'catalogue') renderCatalogue();
+}
+
+function updateHeaderStats() {
+  const active = INVENTORY.filter(i => i.status !== 'sold' && !i.isUnknown);
+  const boxes = new Set(active.map(i => i.box)).size;
+  document.getElementById('hPartCount').textContent = active.length;
+  document.getElementById('hBoxCount').textContent = boxes;
+  document.getElementById('settingInvCount').textContent = INVENTORY.length;
+  if (typeof PARTS_DB !== 'undefined') {
+    document.getElementById('settingPartCount').textContent = PARTS_DB.length;
+  }
 }
 
 // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
