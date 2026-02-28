@@ -1170,6 +1170,7 @@ let PARTS_DB = [];
 let TATANKA_DB = {};
 let INVENTORY = [];
 let PART_PHOTOS = {}; // keyed by partNo: { photos: [dataURL,...], defaultIndex: 0 }
+let DIAGRAM_MAP = {}; // keyed by partNo: { group, diagramPage, pos, occurrences:[{x,y}] }
 let SETTINGS = {
   exchangeRate: 0.088,
   discountIn: 75,
@@ -1341,6 +1342,7 @@ async function init() {
   loadSettings();
   loadInventory();
   await loadTatankaDB();
+  await loadDiagramMap();
   updateHeaderStats();
   renderInventory();
   renderCatalogue();
@@ -1428,6 +1430,31 @@ async function loadTatankaDB() {
     console.log('tatanka_db.json not loaded:', e.message);
   }
 }
+
+async function loadDiagramMap() {
+  try {
+    const r = await fetch('diagram_map.json');
+    if (!r.ok) throw new Error('not found');
+    DIAGRAM_MAP = await r.json();
+    console.log('diagram_map.json loaded:', Object.keys(DIAGRAM_MAP).length, 'parts mapped');
+  } catch(e) {
+    console.log('diagram_map.json not loaded (run build_diagram_map.py to generate):', e.message);
+  }
+}
+
+function getDiagramData(partNo) {
+  if (!partNo || !DIAGRAM_MAP[partNo]) return null;
+  return DIAGRAM_MAP[partNo];
+}
+
+// Build URL for a diagram page image from the group PDF
+// On the real server, PDFs are actual PDFs — the pipeline pre-extracts pages as JPEGs
+// and stores them as: diagram_pages/GRP_PAGE.jpg
+// e.g. diagram_pages/25_3.jpg = group 25, page 3
+function getDiagramPageURL(group, pageNum) {
+  return `diagram_pages/${group}_${pageNum}.jpg`;
+}
+
 
 function getTatankaData(partNo) {
   if (!partNo) return [];
@@ -2358,12 +2385,20 @@ function dvDrawZoom(img, fx, fy, posNo, instanceNum, total) {
 // Open viewer from an inventory item or catalogue entry
 function openPartViewer(partNo, partName) {
   const tatankaItems = getTatankaData(partNo);
-  // TODO: diagramSrc and occurrences will come from diagram mapping JSON once built
+  const diagData = getDiagramData(partNo);
+
+  let diagramSrc = null, posNumber = null, occurrences = [];
+  if (diagData) {
+    diagramSrc = getDiagramPageURL(diagData.group, diagData.diagramPage);
+    posNumber   = diagData.pos;
+    occurrences = diagData.occurrences || [];
+  }
+
   openDiagramViewer(partNo, partName, {
     tatankaItems,
-    diagramSrc: null,   // placeholder until PDF pipeline is built
-    posNumber: null,
-    occurrences: [],
+    diagramSrc,
+    posNumber,
+    occurrences,
   });
 }
 
