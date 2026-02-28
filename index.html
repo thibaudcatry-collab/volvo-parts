@@ -756,11 +756,18 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
 
         <!-- Selected part preview (shown after picking) -->
         <div id="selectedPartPreview" style="display:none;background:var(--surface2);border:1px solid var(--accent);border-left:3px solid var(--accent);border-radius:var(--radius);padding:10px;margin-bottom:2px">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:4px;letter-spacing:1px">SELECTED PART</div>
-          <div id="selectedPartName" style="font-size:15px;font-weight:600;margin-bottom:2px"></div>
-          <div id="selectedPartNo" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)"></div>
-          <div id="selectedPartSv" style="font-size:11px;color:var(--text2);margin-top:1px"></div>
-          <button onclick="clearSelectedPart()" style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--red);background:none;border:none;cursor:pointer;padding:0">✕ Change part</button>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:6px;letter-spacing:1px">SELECTED PART</div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <img id="selectedPartImg" src="" alt="" style="display:none;width:72px;height:72px;border-radius:6px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;cursor:pointer" onclick="openPartViewer(document.getElementById('manualPartNo').value, document.getElementById('selectedPartName').textContent)">
+            <div id="selectedPartImgPh" style="display:none;width:72px;height:72px;border-radius:6px;background:var(--surface3);border:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer" onclick="openPartViewer(document.getElementById('manualPartNo').value, document.getElementById('selectedPartName').textContent)">🔧</div>
+            <div style="flex:1;min-width:0">
+              <div id="selectedPartName" style="font-size:15px;font-weight:600;margin-bottom:2px"></div>
+              <div id="selectedPartNo" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)"></div>
+              <div id="selectedPartSv" style="font-size:11px;color:var(--text2);margin-top:1px"></div>
+              <div id="selectedPartDiagBadge" style="display:none;font-size:10px;color:var(--blue);margin-top:4px">📐 Diagram available — tap image to view</div>
+              <button onclick="clearSelectedPart()" style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--red);background:none;border:none;cursor:pointer;padding:0">✕ Change part</button>
+            </div>
+          </div>
         </div>
 
         <!-- Hidden fields populated by selection -->
@@ -2547,9 +2554,29 @@ function applyPartFromDB(no, name, sv, group) {
   document.getElementById('selectedPartName').textContent = name;
   document.getElementById('selectedPartNo').textContent = no || '— no part number';
   document.getElementById('selectedPartSv').textContent = sv || '';
+
+  // Show image: priority = myPhoto > tatanka > diagram
+  const myPhoto = getDefaultPartPhoto(no);
+  const tatanka = getTatankaData(no);
+  const bestT = tatanka.find(t => !t.is_used) || tatanka[0];
+  const diagData = getDiagramData(no);
+  const imgSrc = myPhoto || bestT?.image_local || (diagData ? getDiagramPageURL(diagData.group, diagData.diagramPage) : null);
+  const imgEl = document.getElementById('selectedPartImg');
+  const phEl  = document.getElementById('selectedPartImgPh');
+  const badgeEl = document.getElementById('selectedPartDiagBadge');
+  if (imgSrc) {
+    imgEl.src = imgSrc;
+    imgEl.style.display = 'block';
+    phEl.style.display = 'none';
+  } else {
+    imgEl.style.display = 'none';
+    phEl.style.display = 'flex';
+  }
+  if (badgeEl) badgeEl.style.display = diagData && !myPhoto && !bestT?.image_local ? '' : 'none';
+
   document.getElementById('selectedPartPreview').style.display = 'block';
   partSelected = true;
-  selectedGuess = { no, name, sv, group, confidence: 100, tatanka: getTatankaData(no), fromManual: true };
+  selectedGuess = { no, name, sv, group, confidence: 100, tatanka, fromManual: true };
   suggestBoxForPart(no);
 }
 
@@ -3002,6 +3029,22 @@ function editItem(id) {
   const item = INVENTORY.find(i => i.id === id);
   if (!item) return;
   openModal('editItem', item);
+}
+
+function retryIdentify(id) {
+  // Take an unknown part and re-run AI identification on it
+  const item = INVENTORY.find(i => i.id === id);
+  if (!item) return;
+  // Pre-fill the identify screen with existing info and go there
+  showScreen('identify');
+  showStep(1);
+  showToast('Take a new photo to re-identify this part', 'info');
+}
+
+function saveSettings() {
+  // Alias — individual settings are saved via saveSetting(key, val)
+  localStorage.setItem('volvo_settings', JSON.stringify(SETTINGS));
+  updateSettingsUI();
 }
 
 function exportInventoryJSON() {
