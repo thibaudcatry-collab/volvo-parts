@@ -2875,8 +2875,8 @@ function resetIdentify() {
   document.getElementById('confirmPrice').value = '';
   document.getElementById('confirmNotes').value = '';
   document.querySelectorAll('.cond-btn').forEach(b => b.className = 'cond-btn');
-  showStep(1);
   showScreen('identify');
+  showStep(1);
 }
 
 function setInvFilter(f, el) {
@@ -2932,13 +2932,15 @@ function renderInvItem(item) {
   const tatankaEur = bestT ? sekToEur(bestT.price_sek) : null;
 
   const myDefaultPhoto = getDefaultPartPhoto(item.partNo);
+  const diagData = item.partNo ? getDiagramData(item.partNo) : null;
   const safePN = (item.partNo||'').replace(/'/g,"\\'");
   const safeName = (item.name||'Part').replace(/'/g,"\\'");
   const thumbClick = `onclick="openPartViewer('${safePN}','${safeName}')" style="cursor:pointer"`;
   const thumb = myDefaultPhoto
     ? `<img class="inv-thumb" src="${myDefaultPhoto}" alt="" ${thumbClick}>` :
     (bestT?.image_local ? `<img class="inv-thumb" src="${bestT.image_local}" alt="" ${thumbClick}>` :
-    `<div class="inv-thumb-ph" ${thumbClick}>${item.isUnknown ? '❓' : '🔧'}</div>`);
+    (diagData ? `<img class="inv-thumb" src="${getDiagramPageURL(diagData.group, diagData.diagramPage)}" alt="" ${thumbClick}>` :
+    `<div class="inv-thumb-ph" ${thumbClick}>${item.isUnknown ? '❓' : '🔧'}</div>`));
 
   const cls = item.isUnknown ? 'unknown-item' : 'inv-item';
 
