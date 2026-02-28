@@ -5,8 +5,8 @@
     "pos": 1,
     "occurrences": [
       {
-        "x": 0.66,
-        "y": 0.63
+        "x": 0.67,
+        "y": 0.62
       }
     ],
     "description": "Exhaust manifold"
@@ -18,7 +18,7 @@
     "occurrences": [
       {
         "x": 0.27,
-        "y": 0.36
+        "y": 0.35
       }
     ],
     "description": "Gasket"
@@ -30,7 +30,7 @@
     "occurrences": [
       {
         "x": 0.13,
-        "y": 0.36
+        "y": 0.35
       }
     ],
     "description": "Screw"
@@ -45,7 +45,7 @@
         "y": 0.5
       },
       {
-        "x": 0.82,
+        "x": 0.78,
         "y": 0.47
       }
     ],
@@ -57,8 +57,8 @@
     "pos": 6,
     "occurrences": [
       {
-        "x": 0.41,
-        "y": 0.25
+        "x": 0.42,
+        "y": 0.23
       }
     ],
     "description": "Shutter shaft"
@@ -69,8 +69,8 @@
     "pos": 7,
     "occurrences": [
       {
-        "x": 0.38,
-        "y": 0.17
+        "x": 0.39,
+        "y": 0.15
       }
     ],
     "description": "Throttle disc"
@@ -81,8 +81,8 @@
     "pos": 8,
     "occurrences": [
       {
-        "x": 0.56,
-        "y": 0.33
+        "x": 0.55,
+        "y": 0.32
       }
     ],
     "description": "Screw"
@@ -93,7 +93,7 @@
     "pos": 9,
     "occurrences": [
       {
-        "x": 0.34,
+        "x": 0.33,
         "y": 0.44
       }
     ],
@@ -106,7 +106,11 @@
     "occurrences": [
       {
         "x": 0.62,
-        "y": 0.17
+        "y": 0.16
+      },
+      {
+        "x": 0.1,
+        "y": 0.67
       }
     ],
     "description": "Guide"
@@ -118,7 +122,7 @@
     "occurrences": [
       {
         "x": 0.69,
-        "y": 0.17
+        "y": 0.16
       }
     ],
     "description": "Spring"
@@ -129,8 +133,8 @@
     "pos": 12,
     "occurrences": [
       {
-        "x": 0.77,
-        "y": 0.17
+        "x": 0.76,
+        "y": 0.15
       }
     ],
     "description": "Lever"
@@ -142,7 +146,7 @@
     "occurrences": [
       {
         "x": 0.82,
-        "y": 0.29
+        "y": 0.27
       }
     ],
     "description": "Lock washer"
@@ -153,8 +157,8 @@
     "pos": 14,
     "occurrences": [
       {
-        "x": 0.87,
-        "y": 0.17
+        "x": 0.86,
+        "y": 0.15
       }
     ],
     "description": "Nut"
@@ -165,8 +169,8 @@
     "pos": 15,
     "occurrences": [
       {
-        "x": 0.12,
-        "y": 0.48
+        "x": 0.14,
+        "y": 0.47
       }
     ],
     "description": "Plug"
@@ -177,7 +181,7 @@
     "pos": 4,
     "occurrences": [
       {
-        "x": 0.62,
+        "x": 0.6,
         "y": 0.3
       }
     ],
@@ -189,12 +193,12 @@
     "pos": 17,
     "occurrences": [
       {
-        "x": 0.16,
-        "y": 0.43
+        "x": 0.17,
+        "y": 0.42
       },
       {
         "x": 0.58,
-        "y": 0.42
+        "y": 0.41
       }
     ],
     "description": "Plug"
@@ -206,11 +210,7 @@
     "occurrences": [
       {
         "x": 0.72,
-        "y": 0.41
-      },
-      {
-        "x": 0.09,
-        "y": 0.71
+        "y": 0.4
       }
     ],
     "description": "Lock nut"
@@ -221,8 +221,8 @@
     "pos": 20,
     "occurrences": [
       {
-        "x": 0.52,
-        "y": 0.68
+        "x": 0.5,
+        "y": 0.69
       }
     ],
     "description": "Guide sleeve"
@@ -233,7 +233,7 @@
     "pos": 22,
     "occurrences": [
       {
-        "x": 0.55,
+        "x": 0.54,
         "y": 0.62
       }
     ],
@@ -245,7 +245,7 @@
     "pos": 23,
     "occurrences": [
       {
-        "x": 0.76,
+        "x": 0.75,
         "y": 0.43
       }
     ],
@@ -257,7 +257,7 @@
     "pos": 52,
     "occurrences": [
       {
-        "x": 0.63,
+        "x": 0.68,
         "y": 0.08
       }
     ],
@@ -305,8 +305,8 @@
     "pos": 6,
     "occurrences": [
       {
-        "x": 0.82,
-        "y": 0.36
+        "x": 0.78,
+        "y": 0.35
       }
     ],
     "description": "Nipple"
@@ -329,8 +329,8 @@
     "pos": 8,
     "occurrences": [
       {
-        "x": 0.28,
-        "y": 0.68
+        "x": 0.3,
+        "y": 0.67
       }
     ],
     "description": "Exhaust manifold, front"
@@ -341,8 +341,8 @@
     "pos": 9,
     "occurrences": [
       {
-        "x": 0.58,
-        "y": 0.65
+        "x": 0.56,
+        "y": 0.64
       }
     ],
     "description": "Exhaust manifold"
@@ -397,7 +397,7 @@
     "pos": 14,
     "occurrences": [
       {
-        "x": 0.31,
+        "x": 0.3,
         "y": 0.47
       }
     ],
@@ -461,7 +461,7 @@
     "pos": 53,
     "occurrences": [
       {
-        "x": 0.67,
+        "x": 0.72,
         "y": 0.08
       }
     ],
@@ -473,8 +473,8 @@
     "pos": 10,
     "occurrences": [
       {
-        "x": 0.48,
-        "y": 0.73
+        "x": 0.5,
+        "y": 0.72
       }
     ],
     "description": "Gasket"
@@ -486,7 +486,7 @@
     "occurrences": [
       {
         "x": 0.62,
-        "y": 0.72
+        "y": 0.71
       }
     ],
     "description": "Screw"
@@ -498,7 +498,7 @@
     "occurrences": [
       {
         "x": 0.22,
-        "y": 0.33
+        "y": 0.34
       }
     ],
     "description": "Washer"
@@ -509,8 +509,8 @@
     "pos": 24,
     "occurrences": [
       {
-        "x": 0.46,
-        "y": 0.24
+        "x": 0.42,
+        "y": 0.26
       }
     ],
     "description": "Spring washer"
@@ -521,7 +521,7 @@
     "pos": 15,
     "occurrences": [
       {
-        "x": 0.22,
+        "x": 0.2,
         "y": 0.51
       }
     ],
@@ -533,8 +533,8 @@
     "pos": 16,
     "occurrences": [
       {
-        "x": 0.37,
-        "y": 0.75
+        "x": 0.38,
+        "y": 0.74
       }
     ],
     "description": "Silencer, rear"
@@ -545,7 +545,7 @@
     "pos": 17,
     "occurrences": [
       {
-        "x": 0.43,
+        "x": 0.42,
         "y": 0.62
       },
       {
@@ -561,7 +561,7 @@
     "pos": 18,
     "occurrences": [
       {
-        "x": 0.32,
+        "x": 0.3,
         "y": 0.67
       }
     ],
@@ -574,7 +574,7 @@
     "occurrences": [
       {
         "x": 0.62,
-        "y": 0.64
+        "y": 0.63
       }
     ],
     "description": "Clamp"
@@ -585,12 +585,12 @@
     "pos": 45,
     "occurrences": [
       {
-        "x": 0.6,
-        "y": 0.21
+        "x": 0.62,
+        "y": 0.24
       },
       {
-        "x": 0.84,
-        "y": 0.11
+        "x": 0.86,
+        "y": 0.14
       }
     ],
     "description": "Washer"
@@ -601,8 +601,8 @@
     "pos": 22,
     "occurrences": [
       {
-        "x": 0.52,
-        "y": 0.25
+        "x": 0.48,
+        "y": 0.27
       }
     ],
     "description": "Bracket"
@@ -613,8 +613,8 @@
     "pos": 23,
     "occurrences": [
       {
-        "x": 0.4,
-        "y": 0.24
+        "x": 0.36,
+        "y": 0.26
       }
     ],
     "description": "Screw"
@@ -625,8 +625,8 @@
     "pos": 25,
     "occurrences": [
       {
-        "x": 0.32,
-        "y": 0.21
+        "x": 0.3,
+        "y": 0.22
       }
     ],
     "description": "Stay"
@@ -637,12 +637,12 @@
     "pos": 26,
     "occurrences": [
       {
-        "x": 0.24,
-        "y": 0.19
+        "x": 0.22,
+        "y": 0.22
       },
       {
-        "x": 0.37,
-        "y": 0.09
+        "x": 0.34,
+        "y": 0.1
       }
     ],
     "description": "Screw"
@@ -653,8 +653,8 @@
     "pos": 29,
     "occurrences": [
       {
-        "x": 0.49,
-        "y": 0.12
+        "x": 0.47,
+        "y": 0.14
       }
     ],
     "description": "Bushing"
@@ -665,8 +665,8 @@
     "pos": 30,
     "occurrences": [
       {
-        "x": 0.55,
-        "y": 0.28
+        "x": 0.52,
+        "y": 0.29
       }
     ],
     "description": "Anchorage"
@@ -677,8 +677,8 @@
     "pos": 31,
     "occurrences": [
       {
-        "x": 0.35,
-        "y": 0.25
+        "x": 0.32,
+        "y": 0.27
       }
     ],
     "description": "Screw"
@@ -689,7 +689,7 @@
     "pos": 32,
     "occurrences": [
       {
-        "x": 0.5,
+        "x": 0.47,
         "y": 0.28
       }
     ],
@@ -713,8 +713,8 @@
     "pos": 34,
     "occurrences": [
       {
-        "x": 0.13,
-        "y": 0.29
+        "x": 0.12,
+        "y": 0.3
       }
     ],
     "description": "Screw"
@@ -725,8 +725,8 @@
     "pos": 35,
     "occurrences": [
       {
-        "x": 0.14,
-        "y": 0.31
+        "x": 0.12,
+        "y": 0.32
       }
     ],
     "description": "Spring washer"
@@ -737,11 +737,11 @@
     "pos": 36,
     "occurrences": [
       {
-        "x": 0.1,
-        "y": 0.54
+        "x": 0.08,
+        "y": 0.56
       },
       {
-        "x": 0.62,
+        "x": 0.6,
         "y": 0.5
       }
     ],
@@ -782,11 +782,11 @@
     "occurrences": [
       {
         "x": 0.1,
-        "y": 0.72
+        "y": 0.73
       },
       {
-        "x": 0.63,
-        "y": 0.56
+        "x": 0.65,
+        "y": 0.57
       }
     ],
     "description": "Washer"
@@ -798,7 +798,7 @@
     "occurrences": [
       {
         "x": 0.1,
-        "y": 0.74
+        "y": 0.75
       },
       {
         "x": 0.1,
@@ -806,11 +806,11 @@
       },
       {
         "x": 0.68,
-        "y": 0.58
+        "y": 0.59
       },
       {
         "x": 0.73,
-        "y": 0.58
+        "y": 0.59
       }
     ],
     "description": "Nut"
@@ -821,8 +821,8 @@
     "pos": 42,
     "occurrences": [
       {
-        "x": 0.78,
-        "y": 0.65
+        "x": 0.8,
+        "y": 0.64
       }
     ],
     "description": "Exhaust pipe"
@@ -833,8 +833,8 @@
     "pos": 43,
     "occurrences": [
       {
-        "x": 0.64,
-        "y": 0.23
+        "x": 0.65,
+        "y": 0.25
       }
     ],
     "description": "Clamp"
@@ -845,8 +845,8 @@
     "pos": 44,
     "occurrences": [
       {
-        "x": 0.58,
-        "y": 0.16
+        "x": 0.55,
+        "y": 0.18
       }
     ],
     "description": "Screw"
@@ -857,12 +857,12 @@
     "pos": 46,
     "occurrences": [
       {
-        "x": 0.63,
-        "y": 0.21
+        "x": 0.66,
+        "y": 0.24
       },
       {
-        "x": 0.8,
-        "y": 0.19
+        "x": 0.83,
+        "y": 0.22
       }
     ],
     "description": "Washer"
@@ -873,12 +873,12 @@
     "pos": 47,
     "occurrences": [
       {
-        "x": 0.74,
-        "y": 0.11
+        "x": 0.72,
+        "y": 0.14
       },
       {
         "x": 0.8,
-        "y": 0.15
+        "y": 0.14
       }
     ],
     "description": "Bushing"
@@ -889,8 +889,8 @@
     "pos": 48,
     "occurrences": [
       {
-        "x": 0.73,
-        "y": 0.19
+        "x": 0.75,
+        "y": 0.22
       }
     ],
     "description": "Spacer sleeve"
@@ -901,7 +901,7 @@
     "pos": 51,
     "occurrences": [
       {
-        "x": 0.55,
+        "x": 0.6,
         "y": 0.08
       }
     ],

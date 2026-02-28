@@ -2314,7 +2314,7 @@ function dvDrawDiagram() {
   occ.forEach((o, i) => {
     const cx = o.x * canvas.width;
     const cy = o.y * canvas.height;
-    const r = Math.max(18, canvas.width * 0.025);
+    const r = Math.max(28, canvas.width * 0.045);
     const isActive = (i === activeIdx) || occ.length >= 6;
 
     // Bright circle
