@@ -397,10 +397,14 @@ textarea { resize: vertical; min-height: 70px; }
   flex: 1; overflow: hidden; position: relative;
   background: #fff;
   display: flex; align-items: center; justify-content: center;
+  cursor: grab;
 }
+.dv-diagram-wrap.grabbing { cursor: grabbing; }
 .dv-diagram-canvas {
   max-width: 100%; max-height: 100%;
-  touch-action: pinch-zoom;
+  touch-action: none;
+  transform-origin: center center;
+  transition: none;
 }
 .dv-occurrence-strip {
   display: flex; gap: 6px; padding: 8px 12px;
@@ -756,11 +760,18 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
 
         <!-- Selected part preview (shown after picking) -->
         <div id="selectedPartPreview" style="display:none;background:var(--surface2);border:1px solid var(--accent);border-left:3px solid var(--accent);border-radius:var(--radius);padding:10px;margin-bottom:2px">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:4px;letter-spacing:1px">SELECTED PART</div>
-          <div id="selectedPartName" style="font-size:15px;font-weight:600;margin-bottom:2px"></div>
-          <div id="selectedPartNo" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)"></div>
-          <div id="selectedPartSv" style="font-size:11px;color:var(--text2);margin-top:1px"></div>
-          <button onclick="clearSelectedPart()" style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--red);background:none;border:none;cursor:pointer;padding:0">✕ Change part</button>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:6px;letter-spacing:1px">SELECTED PART</div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <img id="selectedPartImg" src="" alt="" style="display:none;width:72px;height:72px;border-radius:6px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;cursor:pointer" onclick="openPartViewer(document.getElementById('manualPartNo').value, document.getElementById('selectedPartName').textContent)">
+            <div id="selectedPartImgPh" style="display:none;width:72px;height:72px;border-radius:6px;background:var(--surface3);border:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer" onclick="openPartViewer(document.getElementById('manualPartNo').value, document.getElementById('selectedPartName').textContent)">🔧</div>
+            <div style="flex:1;min-width:0">
+              <div id="selectedPartName" style="font-size:15px;font-weight:600;margin-bottom:2px"></div>
+              <div id="selectedPartNo" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)"></div>
+              <div id="selectedPartSv" style="font-size:11px;color:var(--text2);margin-top:1px"></div>
+              <div id="selectedPartDiagBadge" style="display:none;font-size:10px;color:var(--blue);margin-top:4px">📐 Diagram available — tap image to view</div>
+              <button onclick="clearSelectedPart()" style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--red);background:none;border:none;cursor:pointer;padding:0">✕ Change part</button>
+            </div>
+          </div>
         </div>
 
         <!-- Hidden fields populated by selection -->
@@ -974,6 +985,7 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
       <span class="search-icon">🔍</span>
       <input type="text" placeholder="Search parts, numbers, boxes..." id="invSearch" oninput="filterInventory()">
     </div>
+    <div id="invStatsBar" style="display:flex;gap:8px;padding:0 0 10px 0;flex-wrap:wrap"></div>
     <div class="filter-chips" id="invFilterChips">
       <div class="chip active" onclick="setInvFilter('all',this)">All</div>
       <div class="chip" onclick="setInvFilter('available',this)">Available</div>
@@ -1184,7 +1196,7 @@ let currentPhotoBlob = null;
 let extraAngles = [];
 let currentGuesses = [];
 let selectedGuess = null;
-let currentCondition = null;
+let currentCondition = 'fair';
 let identifyAttempt = 0;
 
 // Manual entry state
@@ -1203,6 +1215,15 @@ function showToast(msg, type) {
   t.textContent = msg;
   t.className = 'toast show' + (type ? ' ' + type : '');
   setTimeout(() => t.className = 'toast', 3000);
+}
+
+function copyToClipboard(text, el) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = el.textContent;
+    el.textContent = '✅';
+    el.style.opacity = '1';
+    setTimeout(() => { el.textContent = orig; el.style.opacity = '0.5'; }, 1500);
+  }).catch(() => showToast('Copy failed', 'error'));
 }
 
 function formatEur(eur) {
@@ -1455,6 +1476,47 @@ function getDiagramPageURL(group, pageNum) {
   return `diagram_pages/${group}_${pageNum}.jpg`;
 }
 
+const GROUP_LABELS = {
+  20: ['ENGINE', '🔧'], 21: ['ENGINE', '🔧'], 22: ['LUBRICATION', '🔧'],
+  23: ['FUEL', '⛽'], 24: ['FUEL', '⛽'], 25: ['EXHAUST', '💨'],
+  26: ['COOLING', '🌡️'], 27: ['ENGINE CTRL', '🔧'],
+  30: ['ELECTRICAL', '⚡'], 31: ['BATTERY', '⚡'], 32: ['ALTERNATOR', '⚡'],
+  33: ['STARTER', '⚡'], 34: ['IGNITION', '⚡'], 35: ['LIGHTING', '💡'],
+  36: ['ELECTRICAL', '⚡'], 37: ['WIRING', '⚡'], 38: ['INSTRUMENTS', '🎛️'],
+  39: ['RADIO', '📻'],
+  40: ['DRIVETRAIN', '⚙️'], 41: ['CLUTCH', '⚙️'], 43: ['GEARBOX', '⚙️'],
+  45: ['PROP SHAFT', '🔩'], 46: ['AXLES', '🛞'], 48: ['PTO', '⚙️'],
+  50: ['BRAKES', '🛑'], 51: ['BRAKES', '🛑'], 52: ['BRAKE SYS', '🛑'],
+  55: ['PARK BRAKE', '🛑'], 58: ['BRAKE PIPES', '🛑'],
+  60: ['STEERING', '🎯'], 61: ['STEERING', '🎯'], 64: ['STEERING', '🎯'],
+  70: ['FRAME', '🏗️'], 71: ['FRAME', '🏗️'], 72: ['FRONT SUSP', '🏗️'],
+  73: ['REAR SUSP', '🏗️'], 77: ['WHEELS', '🛞'],
+  80: ['BODY', '🚗'], 81: ['BODY', '🚗'], 83: ['DOORS', '🚗'],
+  84: ['WINDOWS', '🚗'], 85: ['INTERIOR', '💺'], 86: ['MUDFLAPS', '🚗'],
+  87: ['HEATING', '🔥'], 88: ['INTERIOR', '💺'],
+};
+
+function getDiagramBadgeHTML(group, pos, size = 'normal') {
+  const [label, emoji] = GROUP_LABELS[group] || ['GRP ' + group, '📐'];
+  const isSmall = size === 'small';
+  const w = isSmall ? '36px' : '72px';
+  const h = isSmall ? '36px' : '72px';
+  const br = isSmall ? '4px' : '6px';
+  if (isSmall) {
+    // Small: just emoji + tiny label
+    return `<div style="width:${w};height:${h};border-radius:${br};background:var(--surface3);border:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer">
+      <div style="font-size:13px;line-height:1">${emoji}</div>
+      <div style="font-size:7px;font-weight:700;color:var(--fg);font-family:'IBM Plex Mono',monospace;line-height:1.2;text-align:center">${label}</div>
+    </div>`;
+  }
+  // Normal (72px): label is dominant
+  return `<div style="width:${w};height:${h};border-radius:${br};background:var(--surface3);border:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer">
+    <div style="font-size:10px;line-height:1">${emoji}</div>
+    <div style="font-size:11px;font-weight:800;color:var(--fg);font-family:'IBM Plex Mono',monospace;line-height:1.2;text-align:center">${label}</div>
+    <div style="font-size:8px;color:var(--muted);font-family:'IBM Plex Mono',monospace;line-height:1.2">GRP ${group}${pos ? ' · P'+pos : ''}</div>
+  </div>`;
+}
+
 
 function getTatankaData(partNo) {
   if (!partNo) return [];
@@ -1570,16 +1632,6 @@ function showScreen(name) {
   if (!screenEl) { console.error('No screen:', name); return; }
   screenEl.classList.add('active');
 
-function updateHeaderStats() {
-  const active = INVENTORY.filter(i => i.status !== 'sold' && !i.isUnknown);
-  const boxes = new Set(active.map(i => i.box)).size;
-  document.getElementById('hPartCount').textContent = active.length;
-  document.getElementById('hBoxCount').textContent = boxes;
-  document.getElementById('settingInvCount').textContent = INVENTORY.length;
-  if (typeof PARTS_DB !== 'undefined') {
-    document.getElementById('settingPartCount').textContent = PARTS_DB.length;
-  }
-}
   const navMap = { bulk: 'identify' };
   const navName = navMap[name] || name;
   const navEl = document.getElementById('nav-' + navName);
@@ -1589,6 +1641,17 @@ function updateHeaderStats() {
   if (name === 'inventory') renderInventory();
   if (name === 'summary') renderSummary();
   if (name === 'catalogue') renderCatalogue();
+}
+
+function updateHeaderStats() {
+  const active = INVENTORY.filter(i => i.status !== 'sold' && !i.isUnknown);
+  const boxes = new Set(active.map(i => i.box)).size;
+  document.getElementById('hPartCount').textContent = active.length;
+  document.getElementById('hBoxCount').textContent = boxes;
+  document.getElementById('settingInvCount').textContent = INVENTORY.length;
+  if (typeof PARTS_DB !== 'undefined') {
+    document.getElementById('settingPartCount').textContent = PARTS_DB.length;
+  }
 }
 
 // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
@@ -2231,6 +2294,7 @@ function dvRenderDiagram() {
   }
 
   dvRenderOccurrenceStrip();
+  if (typeof dvResetZoom === 'function') dvResetZoom();
 
   const img = new Image();
   img.onload = () => {
@@ -2272,115 +2336,135 @@ function dvDrawDiagram() {
   const img = _dvState.diagramImg;
   if (!img) return;
 
-  const wrap = document.querySelector('.dv-diagram-wrap');
   const canvas = document.getElementById('dvDiagramCanvas');
   const ctx = canvas.getContext('2d');
 
-  const maxW = wrap.clientWidth;
-  const maxH = wrap.clientHeight - 8;
-  const scale = Math.min(maxW / img.width, maxH / img.height);
-  canvas.width  = Math.round(img.width * scale);
-  canvas.height = Math.round(img.height * scale);
+  // Draw at full image resolution — CSS max-width/max-height handles display scaling
+  // This keeps the image sharp when zooming in
+  canvas.width  = img.width;
+  canvas.height = img.height;
 
-  // Draw image
+  // Draw image cleanly — no dimming, no circles
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-  const occ = _dvState.occurrences;
-  const posNo = _dvState.posNumber;
+  // Hide zoom panel — not used in this approach
+  document.getElementById('dvZoomPanel').style.display = 'none';
 
-  if (occ.length === 0) {
-    // No position data — just show full diagram, hide zoom
-    document.getElementById('dvZoomPanel').style.display = 'none';
-    return;
+  // Show position callout banner
+  const posNo = _dvState.posNumber;
+  const occ = _dvState.occurrences;
+  const banner = document.getElementById('dvPosBanner');
+  if (posNo && banner) {
+    const occCount = occ.length;
+    banner.style.display = '';
+    if (occCount > 1) {
+      banner.innerHTML = `Look for <strong>position ${posNo}</strong> on this diagram &nbsp;·&nbsp; appears <strong>${occCount}×</strong>`;
+    } else {
+      banner.innerHTML = `Look for <strong>position ${posNo}</strong> on this diagram`;
+    }
+  } else if (banner) {
+    banner.style.display = 'none';
+  }
+}
+
+function dvDrawZoom() {} // no-op — zoom replaced by full diagram view
+
+// ── Diagram pinch-to-zoom + pan ───────────────────────────────────────────────
+(function() {
+  let scale = 1, tx = 0, ty = 0;
+  let lastDist = null, lastMid = null;
+  let isDragging = false, dragStart = null, dragTx = 0, dragTy = 0;
+
+  function applyTransform() {
+    const c = document.getElementById('dvDiagramCanvas');
+    if (!c) return;
+    c.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
   }
 
-  // Dim entire image
-  ctx.fillStyle = 'rgba(0,0,0,0.45)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  // Redraw image with clip to create undimmed center area (show all occurrences undimmed)
-  // For simplicity: just draw highlights over dim
+  function resetTransform() {
+    scale = 1; tx = 0; ty = 0;
+    applyTransform();
+  }
 
-  const activeIdx = _dvState.activeOccurrence;
+  function getWrap() { return document.querySelector('.dv-diagram-wrap'); }
 
-  // Draw all occurrences
-  occ.forEach((o, i) => {
-    const cx = o.x * canvas.width;
-    const cy = o.y * canvas.height;
-    const r = Math.max(18, canvas.width * 0.025);
-    const isActive = (i === activeIdx) || occ.length >= 6;
+  // Reset when new diagram is loaded
+  window.dvResetZoom = resetTransform;
 
-    // Bright circle
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fillStyle = isActive ? 'rgba(232,184,75,0.55)' : 'rgba(232,184,75,0.25)';
-    ctx.fill();
-    ctx.strokeStyle = isActive ? '#e8b84b' : 'rgba(232,184,75,0.5)';
-    ctx.lineWidth = isActive ? 3 : 2;
-    ctx.stroke();
-
-    // Instance number badge (for 2-5 occurrences)
-    if (occ.length > 1 && occ.length < 6) {
-      ctx.fillStyle = isActive ? '#e8b84b' : 'rgba(232,184,75,0.6)';
-      ctx.beginPath();
-      ctx.arc(cx + r * 0.7, cy - r * 0.7, r * 0.45, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#000';
-      ctx.font = `bold ${Math.round(r * 0.5)}px IBM Plex Mono, monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(i + 1, cx + r * 0.7, cy - r * 0.7);
+  // Touch: pinch-to-zoom + single-finger pan
+  document.addEventListener('touchstart', e => {
+    const wrap = getWrap();
+    if (!wrap || !wrap.contains(e.target)) return;
+    if (e.touches.length === 2) {
+      const t1 = e.touches[0], t2 = e.touches[1];
+      lastDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      lastMid = { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
+    } else if (e.touches.length === 1 && scale > 1) {
+      isDragging = true;
+      dragStart = { x: e.touches[0].clientX - tx, y: e.touches[0].clientY - ty };
     }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    const wrap = getWrap();
+    if (!wrap || !wrap.contains(e.target)) return;
+    if (e.touches.length === 2) {
+      const t1 = e.touches[0], t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      if (lastDist) {
+        scale = Math.max(1, Math.min(5, scale * (dist / lastDist)));
+        applyTransform();
+      }
+      lastDist = dist;
+    } else if (e.touches.length === 1 && isDragging && dragStart) {
+      tx = e.touches[0].clientX - dragStart.x;
+      ty = e.touches[0].clientY - dragStart.y;
+      applyTransform();
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    if (e.touches.length < 2) lastDist = null;
+    if (e.touches.length === 0) { isDragging = false; dragStart = null; }
+    if (scale <= 1) { scale = 1; tx = 0; ty = 0; applyTransform(); }
+  }, { passive: true });
+
+  // Mouse: scroll to zoom + drag to pan
+  document.addEventListener('wheel', e => {
+    const wrap = getWrap();
+    if (!wrap || !wrap.contains(e.target)) return;
+    e.preventDefault();
+    scale = Math.max(1, Math.min(5, scale * (e.deltaY < 0 ? 1.12 : 0.89)));
+    if (scale <= 1) { tx = 0; ty = 0; }
+    applyTransform();
+  }, { passive: false });
+
+  document.addEventListener('mousedown', e => {
+    const wrap = getWrap();
+    if (!wrap || !wrap.contains(e.target) || scale <= 1) return;
+    isDragging = true;
+    dragStart = { x: e.clientX - tx, y: e.clientY - ty };
+    wrap.classList.add('grabbing');
+  });
+  document.addEventListener('mousemove', e => {
+    if (!isDragging || !dragStart) return;
+    tx = e.clientX - dragStart.x;
+    ty = e.clientY - dragStart.y;
+    applyTransform();
+  });
+  document.addEventListener('mouseup', () => {
+    isDragging = false; dragStart = null;
+    const wrap = getWrap();
+    if (wrap) wrap.classList.remove('grabbing');
   });
 
-  // Zoom panel for active occurrence (only for ≤5 occurrences)
-  if (occ.length < 6 && occ.length > 0) {
-    const o = occ[activeIdx] || occ[0];
-    dvDrawZoom(img, o.x, o.y, posNo, activeIdx + 1, occ.length);
-  } else {
-    document.getElementById('dvZoomPanel').style.display = 'none';
-  }
-}
-
-function dvDrawZoom(img, fx, fy, posNo, instanceNum, total) {
-  const panel = document.getElementById('dvZoomPanel');
-  const zCanvas = document.getElementById('dvZoomCanvas');
-  const zCtx = zCanvas.getContext('2d');
-
-  const zSize = 180; // panel width in CSS px
-  const cropFrac = 0.18; // crop this fraction of image around the point
-  const srcW = img.width * cropFrac;
-  const srcH = img.height * cropFrac;
-  const srcX = Math.max(0, fx * img.width - srcW / 2);
-  const srcY = Math.max(0, fy * img.height - srcH / 2);
-
-  const aspect = srcW / srcH;
-  zCanvas.width  = 180;
-  zCanvas.height = Math.round(180 / aspect);
-
-  // White bg (diagrams are white)
-  zCtx.fillStyle = '#fff';
-  zCtx.fillRect(0, 0, zCanvas.width, zCanvas.height);
-  zCtx.drawImage(img, srcX, srcY, Math.min(srcW, img.width - srcX), Math.min(srcH, img.height - srcY),
-                 0, 0, zCanvas.width, zCanvas.height);
-
-  // Draw highlight circle in zoom
-  const zScale = zCanvas.width / srcW;
-  const zcx = (fx * img.width - srcX) * zScale;
-  const zcy = (fy * img.height - srcY) * zScale;
-  const zr = Math.max(14, zCanvas.width * 0.12);
-
-  zCtx.beginPath();
-  zCtx.arc(zcx, zcy, zr, 0, Math.PI * 2);
-  zCtx.fillStyle = 'rgba(232,184,75,0.45)';
-  zCtx.fill();
-  zCtx.strokeStyle = '#e8b84b';
-  zCtx.lineWidth = 3;
-  zCtx.stroke();
-
-  panel.style.display = '';
-  document.getElementById('dvZoomLabel').textContent =
-    `🔍 Pos ${posNo}${total > 1 ? ' · ' + instanceNum + '/' + total : ''}`;
-}
+  // Double-tap/click to reset
+  document.addEventListener('dblclick', e => {
+    const wrap = getWrap();
+    if (!wrap || !wrap.contains(e.target)) return;
+    resetTransform();
+  });
+})();
 
 // Open viewer from an inventory item or catalogue entry
 function openPartViewer(partNo, partName) {
@@ -2509,13 +2593,19 @@ function onSmartSearch(val) {
     const tatanka = getTatankaData(p.no);
     const best = tatanka.find(t => !t.is_used) || tatanka[0];
     const priceHint = best && sekToEur(best.price_sek) ? ` · ~${formatEur(sekToEur(best.price_sek))}` : '';
+    const diagData = getDiagramData(p.no);
+    const thumbSrc = best?.image_local || null;
+    const thumbHTML = thumbSrc
+      ? `<img src="${thumbSrc}" style="width:36px;height:36px;border-radius:4px;object-fit:cover;flex-shrink:0">`
+      : diagData ? getDiagramBadgeHTML(diagData.group, null, 'small')
+      : `<div style="width:36px;height:36px;border-radius:4px;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🔧</div>`;
     return `<div onclick="applyPartFromDB('${p.no.replace(/'/g,"\'")}','${p.name.replace(/'/g,"\'")}','${(p.sv||'').replace(/'/g,"\'")}','${p.g}')"
       style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-      ${best?.image_local ? `<img src="${best.image_local}" style="width:36px;height:36px;border-radius:4px;object-fit:cover;flex-shrink:0">` : '<div style="width:36px;height:36px;border-radius:4px;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🔧</div>'}
+      ${thumbHTML}
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
         <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent)">${p.no}</div>
-        <div style="font-size:10px;color:var(--muted)">${p.sv || ''}${tatanka.length > 0 ? '<span style="color:var(--green)">  ✓ Tatanka' + priceHint + '</span>' : ''}</div>
+        <div style="font-size:10px;color:var(--muted)">${p.sv || ''}${tatanka.length > 0 ? '<span style="color:var(--green)">  ✓ Tatanka' + priceHint + '</span>' : (diagData ? '<span style="color:var(--blue)">  📐 Diagram</span>' : '')}</div>
       </div>
     </div>`;
   }).join('');
@@ -2544,9 +2634,62 @@ function applyPartFromDB(no, name, sv, group) {
   document.getElementById('selectedPartName').textContent = name;
   document.getElementById('selectedPartNo').textContent = no || '— no part number';
   document.getElementById('selectedPartSv').textContent = sv || '';
+
+  // Show image: priority = myPhoto > tatanka > diagram
+  const myPhoto = getDefaultPartPhoto(no);
+  const tatanka = getTatankaData(no);
+  const bestT = tatanka.find(t => !t.is_used) || tatanka[0];
+  const diagData = getDiagramData(no);
+  const imgSrc = myPhoto || bestT?.image_local || null;
+  const imgEl = document.getElementById('selectedPartImg');
+  const phEl  = document.getElementById('selectedPartImgPh');
+  const badgeEl = document.getElementById('selectedPartDiagBadge');
+  if (imgSrc) {
+    imgEl.src = imgSrc;
+    imgEl.style.display = 'block';
+    phEl.style.display = 'none';
+  } else {
+    imgEl.style.display = 'none';
+    if (diagData) {
+      phEl.style.display = 'none';
+      // Insert badge next to where img would be
+      let badge = document.getElementById('selectedPartDiagThumb');
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'selectedPartDiagThumb';
+        badge.onclick = () => openPartViewer(document.getElementById('manualPartNo').value, document.getElementById('selectedPartName').textContent);
+        imgEl.parentNode.insertBefore(badge, imgEl);
+      }
+      badge.innerHTML = getDiagramBadgeHTML(diagData.group, diagData.pos, 'normal');
+      badge.style.display = '';
+    } else {
+      phEl.style.display = 'flex';
+      phEl.textContent = '🔧';
+      const badge = document.getElementById('selectedPartDiagThumb');
+      if (badge) badge.style.display = 'none';
+    }
+  }
+  if (badgeEl) badgeEl.style.display = diagData && !myPhoto && !bestT?.image_local ? '' : 'none';
+
   document.getElementById('selectedPartPreview').style.display = 'block';
   partSelected = true;
-  selectedGuess = { no, name, sv, group, confidence: 100, tatanka: getTatankaData(no), fromManual: true };
+  selectedGuess = { no, name, sv, group, confidence: 100, tatanka, fromManual: true };
+
+  // Auto-fill asking price from Tatanka if field is empty
+  const priceField = document.getElementById('confirmPrice');
+  if (priceField && (!priceField.value || parseFloat(priceField.value) === 0)) {
+    const tatankaNew = tatanka.find(t => !t.is_used);
+    const tatankaUsed = tatanka.find(t => t.is_used);
+    const ref = tatankaNew || tatankaUsed;
+    if (ref?.price_sek) {
+      const eur = sekToEur(ref.price_sek);
+      // Suggest 40% of new price or 60% of used price as a reasonable asking price
+      const suggested = tatankaNew ? Math.round(eur * 0.4 * 100) / 100 : Math.round(eur * 0.6 * 100) / 100;
+      priceField.value = suggested.toFixed(2);
+      showToast(`💡 Price pre-filled from Tatanka (${tatankaNew ? '40% of new' : '60% of used'})`, 'info');
+    }
+  }
+
   suggestBoxForPart(no);
 }
 
@@ -2820,7 +2963,11 @@ async function savePart() {
 
 function resetIdentify() {
   currentPhoto = null; currentPhotoBlob = null;
-  currentGuesses = []; selectedGuess = null; currentCondition = null;
+  currentGuesses = []; selectedGuess = null; currentCondition = 'fair';
+  // Pre-select Fair condition button
+  document.querySelectorAll('.cond-btn').forEach(b => b.className = 'cond-btn');
+  const fairBtn = document.getElementById('condBtnFair');
+  if (fairBtn) fairBtn.classList.add('active-fair');
   const area = document.getElementById('photoArea');
   area.classList.remove('has-photo');
   area.innerHTML = `<div class="photo-placeholder"><div class="photo-icon">\ud83d\udcf7</div><div class="photo-label">TAP TO TAKE PHOTO</div><div class="photo-sublabel">or choose from gallery</div></div>`;
@@ -2842,9 +2989,10 @@ function resetIdentify() {
   if (document.getElementById('customSourceUrl')) document.getElementById('customSourceUrl').value = '';
   partSelected = false;
   setEntryMode('catalogue');
-  document.getElementById('confirmPrice').value = '';
-  document.getElementById('confirmNotes').value = '';
+  const cp = document.getElementById('confirmPrice'); if (cp) cp.value = '';
+  const cn = document.getElementById('confirmNotes'); if (cn) cn.value = '';
   document.querySelectorAll('.cond-btn').forEach(b => b.className = 'cond-btn');
+  showScreen('identify');
   showStep(1);
 }
 
@@ -2864,8 +3012,32 @@ function renderInventory() {
   const list = document.getElementById('invList');
   if (!list) return;
 
-  let items = [...INVENTORY];
+  // Update stats bar
+  const statsBar = document.getElementById('invStatsBar');
+  if (statsBar) {
+    const active = INVENTORY.filter(i => i.status !== 'sold' && !i.isUnknown);
+    const listed = INVENTORY.filter(i => i.status === 'listed');
+    const unknown = INVENTORY.filter(i => i.isUnknown);
+    const totalAsking = active.reduce((s, i) => s + (i.askingPrice || 0) * (i.qty || 1), 0);
+    const tatankaTotal = active.reduce((s, i) => {
+      const t = getTatankaData(i.partNo);
+      const ref = t.find(x => !x.is_used) || t[0];
+      return s + (ref ? sekToEur(ref.price_sek) * (i.qty || 1) : 0);
+    }, 0);
+    const stat = (icon, val, label) =>
+      `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;white-space:nowrap">
+        <span style="opacity:0.6">${icon} ${label}</span>
+        <span style="font-weight:700;color:var(--accent);margin-left:4px">${val}</span>
+      </div>`;
+    statsBar.innerHTML =
+      stat('📦', active.length, 'parts') +
+      stat('📢', listed.length, 'listed') +
+      (unknown.length ? stat('❓', unknown.length, 'unknown') : '') +
+      stat('💶', formatEur(totalAsking), 'asking') +
+      (tatankaTotal > 0 ? stat('🏷️', formatEur(tatankaTotal), 'tatanka') : '');
+  }
 
+  let items = [...INVENTORY];
   // Apply filter
   if (invFilter === 'available') items = items.filter(i => i.status === 'available' && !i.isUnknown);
   else if (invFilter === 'listed') items = items.filter(i => i.status === 'listed');
@@ -2901,13 +3073,15 @@ function renderInvItem(item) {
   const tatankaEur = bestT ? sekToEur(bestT.price_sek) : null;
 
   const myDefaultPhoto = getDefaultPartPhoto(item.partNo);
+  const diagData = item.partNo ? getDiagramData(item.partNo) : null;
   const safePN = (item.partNo||'').replace(/'/g,"\\'");
   const safeName = (item.name||'Part').replace(/'/g,"\\'");
   const thumbClick = `onclick="openPartViewer('${safePN}','${safeName}')" style="cursor:pointer"`;
   const thumb = myDefaultPhoto
     ? `<img class="inv-thumb" src="${myDefaultPhoto}" alt="" ${thumbClick}>` :
     (bestT?.image_local ? `<img class="inv-thumb" src="${bestT.image_local}" alt="" ${thumbClick}>` :
-    `<div class="inv-thumb-ph" ${thumbClick}>${item.isUnknown ? '❓' : '🔧'}</div>`);
+    (diagData ? getDiagramBadgeHTML(diagData.group, diagData.pos, 'small') :
+    `<div class="inv-thumb-ph" ${thumbClick}>${item.isUnknown ? '❓' : '🔧'}</div>`));
 
   const cls = item.isUnknown ? 'unknown-item' : 'inv-item';
 
@@ -2916,7 +3090,10 @@ function renderInvItem(item) {
       ${thumb}
       <div class="inv-info">
         <div class="inv-name">${item.name || 'Unknown Part'}</div>
-        <div class="inv-no">${item.partNo || ''}</div>
+        <div class="inv-no" style="display:flex;align-items:center;gap:6px">
+          <span>${item.partNo || ''}</span>
+          ${item.partNo ? `<span onclick="copyToClipboard('${(item.partNo||'').replace(/'/g,"\\'")}',this)" style="cursor:pointer;opacity:0.5;font-size:10px;user-select:none" title="Copy part number">📋</span>` : ''}
+        </div>
         <div class="inv-meta">
           <span class="badge badge-muted">\ud83d\udce6 Box ${item.box || '\u2014'}</span>
           <span class="badge badge-muted">\u00d7${item.qty || 1}</span>
@@ -2998,6 +3175,22 @@ function editItem(id) {
   const item = INVENTORY.find(i => i.id === id);
   if (!item) return;
   openModal('editItem', item);
+}
+
+function retryIdentify(id) {
+  // Take an unknown part and re-run AI identification on it
+  const item = INVENTORY.find(i => i.id === id);
+  if (!item) return;
+  // Pre-fill the identify screen with existing info and go there
+  showScreen('identify');
+  showStep(1);
+  showToast('Take a new photo to re-identify this part', 'info');
+}
+
+function saveSettings() {
+  // Alias — individual settings are saved via saveSetting(key, val)
+  localStorage.setItem('volvo_settings', JSON.stringify(SETTINGS));
+  updateSettingsUI();
 }
 
 function exportInventoryJSON() {
@@ -3604,9 +3797,10 @@ function saveAllBulk() { console.warn("saveAllBulk not implemented"); }
 
   <!-- Diagram pane -->
   <div class="dv-pane" id="dvPaneDiagram">
+    <div id="dvPosBanner" style="display:none;background:var(--accent);color:#000;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;padding:5px 14px;text-align:center;letter-spacing:0.5px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
     <div class="dv-diagram-wrap">
       <canvas id="dvDiagramCanvas" class="dv-diagram-canvas"></canvas>
-      <div class="dv-zoom-panel" id="dvZoomPanel">
+      <div class="dv-zoom-panel" id="dvZoomPanel" style="display:none">
         <div class="dv-zoom-panel-label" id="dvZoomLabel">ZOOM</div>
         <canvas id="dvZoomCanvas"></canvas>
       </div>
