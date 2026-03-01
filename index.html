@@ -762,8 +762,8 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
         <div id="selectedPartPreview" style="display:none;background:var(--surface2);border:1px solid var(--accent);border-left:3px solid var(--accent);border-radius:var(--radius);padding:10px;margin-bottom:2px">
           <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:6px;letter-spacing:1px">SELECTED PART</div>
           <div style="display:flex;gap:10px;align-items:flex-start">
-            <img id="selectedPartImg" src="" alt="" style="display:none;width:72px;height:72px;border-radius:6px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;cursor:pointer" onclick="openPartViewer(document.getElementById('manualPartNo').value, document.getElementById('selectedPartName').textContent)">
-            <div id="selectedPartImgPh" style="display:none;width:72px;height:72px;border-radius:6px;background:var(--surface3);border:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer" onclick="openPartViewer(document.getElementById('manualPartNo').value, document.getElementById('selectedPartName').textContent)">🔧</div>
+            <img id="selectedPartImg" src="" alt="" style="display:none;width:72px;height:72px;border-radius:6px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;cursor:pointer" onclick="openPartViewer(document.getElementById('manualPartNo').value, document.getElementById('selectedPartName').textContent, document.getElementById('manualGroup').value)">
+            <div id="selectedPartImgPh" style="display:none;width:72px;height:72px;border-radius:6px;background:var(--surface3);border:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer" onclick="openPartViewer(document.getElementById('manualPartNo').value, document.getElementById('selectedPartName').textContent, document.getElementById('manualGroup').value)">🔧</div>
             <div style="flex:1;min-width:0">
               <div id="selectedPartName" style="font-size:15px;font-weight:600;margin-bottom:2px"></div>
               <div id="selectedPartNo" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)"></div>
@@ -1463,9 +1463,29 @@ async function loadDiagramMap() {
   }
 }
 
-function getDiagramData(partNo) {
+function getDiagramData(partNo, preferGroup) {
   if (!partNo || !DIAGRAM_MAP[partNo]) return null;
-  return DIAGRAM_MAP[partNo];
+  const entries = DIAGRAM_MAP[partNo];
+  // New format: array of entries
+  if (Array.isArray(entries)) {
+    if (!entries.length) return null;
+    // If a preferred group is specified, return that group's entry
+    if (preferGroup) {
+      const match = entries.find(e => e.group === parseInt(preferGroup));
+      if (match) return match;
+    }
+    // Otherwise return first entry
+    return entries[0];
+  }
+  // Legacy format: single object (backwards compatible)
+  return entries;
+}
+
+function getDiagramDataAll(partNo) {
+  if (!partNo || !DIAGRAM_MAP[partNo]) return [];
+  const entries = DIAGRAM_MAP[partNo];
+  if (Array.isArray(entries)) return entries;
+  return [entries]; // legacy single object
 }
 
 // Build URL for a diagram page image from the group PDF
@@ -2467,9 +2487,9 @@ function dvDrawZoom() {} // no-op — zoom replaced by full diagram view
 })();
 
 // Open viewer from an inventory item or catalogue entry
-function openPartViewer(partNo, partName) {
+function openPartViewer(partNo, partName, preferGroup) {
   const tatankaItems = getTatankaData(partNo);
-  const diagData = getDiagramData(partNo);
+  const diagData = getDiagramData(partNo, preferGroup);
 
   let diagramSrc = null, posNumber = null, occurrences = [];
   if (diagData) {
@@ -2654,7 +2674,7 @@ function applyPartFromDB(no, name, sv, group) {
   const myPhoto = getDefaultPartPhoto(no);
   const tatanka = getTatankaData(no);
   const bestT = tatanka.find(t => !t.is_used) || tatanka[0];
-  const diagData = getDiagramData(no);
+  const diagData = getDiagramData(no, group);
   const imgSrc = myPhoto || bestT?.image_local || null;
   const imgEl = document.getElementById('selectedPartImg');
   const phEl  = document.getElementById('selectedPartImgPh');
@@ -2672,7 +2692,7 @@ function applyPartFromDB(no, name, sv, group) {
       if (!badge) {
         badge = document.createElement('div');
         badge.id = 'selectedPartDiagThumb';
-        badge.onclick = () => openPartViewer(document.getElementById('manualPartNo').value, document.getElementById('selectedPartName').textContent);
+        badge.onclick = () => openPartViewer(document.getElementById('manualPartNo').value, document.getElementById('selectedPartName').textContent, document.getElementById('manualGroup').value);
         imgEl.parentNode.insertBefore(badge, imgEl);
       }
       badge.innerHTML = getDiagramBadgeHTML(diagData.group, diagData.pos, 'normal');
