@@ -755,7 +755,7 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
             oninput="onSmartSearch(this.value)"
             autocomplete="off" autocorrect="off" spellcheck="false"
             style="font-size:15px">
-          <div id="smartSearchResults" style="display:none;margin-top:4px;max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2)"></div>
+          <div id="smartSearchResults" style="display:none;margin-top:4px;max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2)"></div>
         </div>
 
         <!-- Selected part preview (shown after picking) -->
@@ -2596,8 +2596,8 @@ function onSmartSearch(val) {
   const isPartNo = /^\d/.test(q);
   let results;
   if (isPartNo) {
-    results = PARTS_DB.filter(p => p.no.startsWith(q) || p.no.replace(/-\d$/,'').startsWith(q)).slice(0, 20);
-    if (results.length === 0) results = PARTS_DB.filter(p => p.no.includes(q)).slice(0, 20);
+    results = PARTS_DB.filter(p => p.no.startsWith(q) || p.no.replace(/-\d$/,'').startsWith(q));
+    if (results.length === 0) results = PARTS_DB.filter(p => p.no.includes(q));
   } else {
     const terms = expandSearchTerms(q);
     results = PARTS_DB.map(p => ({ p, score: searchScore(p, terms) })).filter(x => x.score > 0)
@@ -2610,7 +2610,10 @@ function onSmartSearch(val) {
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
-  }).slice(0, 8);
+  });
+  // For exact part number match show all results, for name search cap at 8
+  const isExact = results.length > 0 && results[0].no === q;
+  if (!isPartNo || !isExact) results = results.slice(0, 8);
   if (results.length === 0) {
     el.style.display = 'block';
     el.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:var(--muted)">No matches — try different words, or switch to Custom Part</div>';
