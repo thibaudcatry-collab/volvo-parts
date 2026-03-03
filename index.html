@@ -1429,7 +1429,7 @@ async function init() {
   loadInventory();
   await loadTatankaDB();
   await loadDiagramMap();
-  getMsalApp(); // restore OneDrive sign-in state from previous session
+  await getMsalApp(); // restore OneDrive sign-in state / handle redirect response
   updateHeaderStats();
   renderInventory();
   renderCatalogue();
@@ -3370,7 +3370,7 @@ function saveSettings() {
 // 5. backupToOneDrive() → saves inventory.json + photos.json into that folder
 // 6. restoreFromOneDrive() → reads those files back and reloads the app data
 
-function getMsalApp() {
+async function getMsalApp() {
   // Lazy-create the MSAL instance so we only init it when needed
   if (_msalApp) return _msalApp;
   if (OD_CLIENT_ID === 'YOUR_CLIENT_ID_HERE') {
@@ -3386,9 +3386,22 @@ function getMsalApp() {
     },
     cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: true },
   });
-  // Check if a user was already signed in from a previous session
+  // IMPORTANT: always call handleRedirectPromise() on page load
+  // This processes the login response when Microsoft redirects back to your app
+  try {
+    const result = await _msalApp.handleRedirectPromise();
+    if (result && result.account) {
+      // We just came back from a successful Microsoft login redirect
+      _odAccount = result.account;
+      updateOneDriveUI();
+      showToast('Signed in as ' + _odAccount.username + ' ✓', 'success');
+    }
+  } catch (err) {
+    console.error('MSAL redirect handling error:', err);
+  }
+  // Also check if a user was already signed in from a previous session
   const accounts = _msalApp.getAllAccounts();
-  if (accounts.length > 0) {
+  if (!_odAccount && accounts.length > 0) {
     _odAccount = accounts[0];
     updateOneDriveUI();
   }
@@ -3396,35 +3409,31 @@ function getMsalApp() {
 }
 
 async function oneDriveSignIn() {
-  const app = getMsalApp();
+  // Uses redirect (not popup) — avoids popup blockers in Chrome/Safari
+  // Microsoft will redirect back to this page after login
+  const app = await getMsalApp();
   if (!app) return;
   try {
-    // Opens a popup window asking the user to sign in with Microsoft
-    const result = await app.loginPopup({
+    await app.loginRedirect({
       scopes: ['Files.ReadWrite', 'offline_access'],
     });
-    _odAccount = result.account;
-    updateOneDriveUI();
-    showToast('Signed in as ' + _odAccount.username, 'success');
+    // Page navigates away here — execution resumes in getMsalApp() after redirect back
   } catch (err) {
-    if (err.errorCode !== 'user_cancelled') {
-      showToast('Sign-in failed: ' + (err.message || err), 'error');
-    }
+    showToast('Sign-in failed: ' + (err.message || err), 'error');
   }
 }
 
-function oneDriveSignOut() {
-  const app = getMsalApp();
+async function oneDriveSignOut() {
+  const app = await getMsalApp();
   if (!app || !_odAccount) return;
-  app.logoutPopup({ account: _odAccount });
   _odAccount = null;
   updateOneDriveUI();
-  showToast('Signed out from OneDrive', 'success');
+  await app.logoutRedirect();
 }
 
 async function getOdToken() {
-  // Gets a fresh access token silently (no popup if session is still valid)
-  const app = getMsalApp();
+  // Gets a fresh access token silently (no redirect needed if session is still valid)
+  const app = await getMsalApp();
   if (!app) return null;
   if (!_odAccount) { showToast('Sign in to OneDrive first', 'error'); return null; }
   try {
@@ -3434,17 +3443,13 @@ async function getOdToken() {
     });
     return result.accessToken;
   } catch (err) {
-    // Silent failed → need to show a popup to refresh the session
-    try {
-      const result = await app.acquireTokenPopup({
-        scopes: ['Files.ReadWrite'],
-        account: _odAccount,
-      });
-      return result.accessToken;
-    } catch (err2) {
-      showToast('OneDrive auth failed — please Sign In again', 'error');
-      return null;
-    }
+    // Silent failed → need a full redirect to refresh the session
+    showToast('Session expired — signing in again...', 'error');
+    await app.acquireTokenRedirect({
+      scopes: ['Files.ReadWrite'],
+      account: _odAccount,
+    });
+    return null; // page will redirect, execution stops here
   }
 }
 
