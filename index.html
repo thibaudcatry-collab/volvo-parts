@@ -3444,15 +3444,27 @@ async function restoreFromGist() {
     renderInventory(); renderSummary(); updateBackupStatus();
     showToast(INVENTORY.length + ' parts restored (' + backupDate + ') - loading photos...', 'success');
     const photosFile = data.files['volvo_photos.json'];
-    if (photosFile && photosFile.content) {
+    if (photosFile) {
       try {
-        const pp = JSON.parse(photosFile.content);
+        showPersistentToast('Loading photos...');
+        // GitHub truncates large files — if content is cut off, fetch via raw_url instead
+        let photosRaw = photosFile.content;
+        if (photosFile.truncated || !photosRaw) {
+          if (!photosFile.raw_url) throw new Error('Photos file truncated and no raw_url available');
+          const rawRes = await fetch(photosFile.raw_url, {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          if (!rawRes.ok) throw new Error('Could not fetch raw photos: ' + rawRes.status);
+          photosRaw = await rawRes.text();
+        }
+        const pp = JSON.parse(photosRaw);
         PART_PHOTOS = pp.photos || {};
         localStorage.setItem('volvo_part_photos', JSON.stringify(PART_PHOTOS));
         renderInventory();
         showToast(INVENTORY.length + ' parts + photos restored (' + backupDate + ')', 'success');
       } catch(photoErr) {
-        showToast(INVENTORY.length + ' parts restored - photos could not be loaded', 'success');
+        console.error('Photo restore error:', photoErr);
+        showToast(INVENTORY.length + ' parts restored — photos failed: ' + photoErr.message, 'error');
       }
     } else {
       showToast(INVENTORY.length + ' parts restored (no photos in this backup)', 'success');
