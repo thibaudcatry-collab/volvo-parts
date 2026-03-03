@@ -3944,7 +3944,12 @@ function openModal(type, data) {
             <label style="cursor:pointer;display:inline-block">
               <input type="file" accept="image/*" capture="environment" id="editPhotoInput" style="display:none"
                 onchange="previewEditPhoto(this, ${item.id})">
-              <span class="btn btn-secondary btn-xs">📷 ${existingPhoto ? 'REPLACE PHOTO' : 'ADD PHOTO'}</span>
+              <span class="btn btn-secondary btn-xs">📷 ${existingPhoto ? 'REPLACE' : 'CAMERA'}</span>
+            </label>
+            <label style="cursor:pointer;display:inline-block">
+              <input type="file" accept="image/*" id="editGalleryInput" style="display:none"
+                onchange="previewEditPhoto(this, ${item.id})">
+              <span class="btn btn-secondary btn-xs">🖼️ GALLERY</span>
             </label>
             ${existingPhoto ? `<button class="btn btn-danger btn-xs" onclick="removeEditPhoto(${item.id})">🗑️ REMOVE</button>` : ''}
           </div>
