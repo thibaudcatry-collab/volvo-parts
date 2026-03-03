@@ -1427,6 +1427,7 @@ async function init() {
   renderSummary();
   updateSettingsUI();
   updateApiKeyStatus();
+  await autoRestoreIfEmpty();
 }
 
 function loadInventory() {
@@ -3364,129 +3365,112 @@ function getGistId() {
 async function backupToGist(silent = false) {
   const token = getGithubToken();
   if (!token) {
-    if (!silent) showToast('No GitHub token set — add it in Settings', 'error');
+    if (!silent) showToast('No GitHub token set - add it in Settings', 'error');
     return;
   }
-
-  if (!silent) showPersistentToast('☁️ Backing up…');
-
-  const payload = {
-    inventory: INVENTORY,
-    partPhotos: PART_PHOTOS,
-    backupDate: new Date().toISOString(),
-    partCount: INVENTORY.length,
+  if (!silent) showPersistentToast('Backing up...');
+  const invPayload = {
+    version: 2, backupDate: new Date().toISOString(), partCount: INVENTORY.length,
+    inventory: INVENTORY.map(function(item) { var c = Object.assign({}, item); delete c.photo; return c; }),
   };
-
+  const photosPayload = { version: 2, backupDate: new Date().toISOString(), photos: PART_PHOTOS };
   const gistBody = {
-    description: 'Volvo C303 Parts Inventory Backup',
-    public: false,
+    description: 'Volvo C303 Parts Inventory Backup', public: false,
     files: {
-      'volvo_inventory.json': { content: JSON.stringify(payload, null, 2) }
-    }
+      'volvo_inventory.json': { content: JSON.stringify(invPayload, null, 2) },
+      'volvo_photos.json':    { content: JSON.stringify(photosPayload, null, 2) },
+    },
   };
-
   try {
     const gistId = getGistId();
-    const url = gistId
-      ? `https://api.github.com/gists/${gistId}`
-      : 'https://api.github.com/gists';
+    const url = gistId ? 'https://api.github.com/gists/' + gistId : 'https://api.github.com/gists';
     const method = gistId ? 'PATCH' : 'POST';
-
     const res = await fetch(url, {
-      method,
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+      method: method,
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
       body: JSON.stringify(gistBody),
     });
-
-    if (!res.ok) throw new Error(`GitHub error: ${res.status}`);
+    if (!res.ok) throw new Error('GitHub error: ' + res.status);
     const data = await res.json();
-
-    // Save gist ID for future updates
     localStorage.setItem(GIST_ID_STORAGE, data.id);
     localStorage.setItem('volvo_last_backup', new Date().toISOString());
-    updateBackupStatus();
-
-    if (!silent) showToast(`✅ Backed up ${INVENTORY.length} parts to GitHub`, 'success');
-    else console.log(`Auto-backup OK: ${INVENTORY.length} parts → Gist ${data.id}`);
-
+    updateBackupStatus(); updateGithubSettingsUI();
+    if (!silent) showToast('Backed up ' + INVENTORY.length + ' parts + photos', 'success');
+    else console.log('Auto-backup OK: ' + INVENTORY.length + ' parts');
   } catch(err) {
     console.error('Backup failed:', err);
     if (!silent) showToast('Backup failed: ' + err.message, 'error');
-    else showToast('⚠️ Auto-backup failed — check GitHub token in Settings', 'error');
+    else showToast('Auto-backup failed - check token in Settings', 'error');
   }
 }
+
 
 async function restoreFromGist() {
   const token = getGithubToken();
   const gistId = getGistId();
   if (!token || !gistId) {
-    showToast('No backup found — set GitHub token and backup first', 'error');
+    showToast('No backup found - set GitHub token and backup first', 'error');
     return;
   }
-
-  if (!confirm(`Restore inventory from GitHub backup? This will replace your current ${INVENTORY.length} parts.`)) return;
-
-  showPersistentToast('⬇️ Restoring…');
-
+  if (!confirm('Restore from GitHub? This replaces your current ' + INVENTORY.length + ' parts.')) return;
+  showPersistentToast('Restoring inventory...');
   try {
-    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+    const res = await fetch('https://api.github.com/gists/' + gistId, {
+      headers: { 'Authorization': 'Bearer ' + token }
     });
-    if (!res.ok) throw new Error(`GitHub error: ${res.status}`);
+    if (!res.ok) throw new Error('GitHub error: ' + res.status);
     const data = await res.json();
-    const raw = data.files['volvo_inventory.json']?.content;
-    if (!raw) throw new Error('Backup file not found in Gist');
-
-    let inventory = [], partPhotos = {}, backupDate = '?';
-
-    // Try clean parse first (works for compressed backups)
+    const invRaw = data.files['volvo_inventory.json'] ? data.files['volvo_inventory.json'].content : null;
+    if (!invRaw) throw new Error('Inventory file not found in Gist');
+    let inventory = [], backupDate = '?';
     try {
-      const payload = JSON.parse(raw);
+      const payload = JSON.parse(invRaw);
       inventory = payload.inventory || [];
-      partPhotos = payload.partPhotos || {};
-      backupDate = payload.backupDate?.slice(0,10) || '?';
+      backupDate = (payload.backupDate || '?').slice(0, 10);
     } catch(parseErr) {
-      // Truncated JSON (old large-photo backup) — extract parts via regex
-      showPersistentToast('⬇️ Recovering from truncated backup…');
-      const regex = /"id"\s*:\s*(\d+),\s*"partNo"\s*:\s*"([^"]*)",\s*"name"\s*:\s*"([^"]*)",\s*"nameSv"\s*:\s*"([^"]*)",\s*"group"\s*:\s*"([^"]*)",\s*"box"\s*:\s*"([^"]*)",\s*"qty"\s*:\s*(\d+),\s*"condition"\s*:\s*"([^"]*)",\s*"askingPrice"\s*:\s*([\d.]+)/g;
-      let match;
-      while ((match = regex.exec(raw)) !== null) {
-        inventory.push({
-          id: parseInt(match[1]),
-          partNo: match[2],
-          name: match[3],
-          nameSv: match[4],
-          group: match[5],
-          box: match[6],
-          qty: parseInt(match[7]),
-          condition: match[8],
-          askingPrice: parseFloat(match[9]),
-          notes: '',
-          photo: null,
-          status: 'available',
-          addedDate: new Date().toISOString(),
-        });
+      showPersistentToast('Recovering from old backup...');
+      const rx = /"id":\s*(\d{13})[^}]*?"partNo":\s*"([^"]*)"[^}]*?"name":\s*"([^"]*)"[^}]*?"nameSv":\s*"([^"]*)"[^}]*?"group":\s*"([^"]*)"[^}]*?"box":\s*"([^"]*)"[^}]*?"qty":\s*(\d+)[^}]*?"condition":\s*"([^"]*)"[^}]*?"askingPrice":\s*([\d.]+)/g;
+      let m;
+      while ((m = rx.exec(invRaw)) !== null) {
+        inventory.push({ id: parseInt(m[1]), partNo: m[2], name: m[3], nameSv: m[4],
+          group: m[5], box: m[6], qty: parseInt(m[7]), condition: m[8],
+          askingPrice: parseFloat(m[9]), notes: '', photo: null, status: 'available',
+          addedDate: new Date().toISOString(), isCustom: m[2].startsWith('CUSTOM') });
       }
-      if (inventory.length === 0) throw new Error('Could not recover any parts from backup');
+      if (inventory.length === 0) throw new Error('Could not recover any parts');
     }
-
     INVENTORY = inventory;
-    PART_PHOTOS = partPhotos;
     localStorage.setItem('volvo_inventory', JSON.stringify(INVENTORY));
-    localStorage.setItem('volvo_part_photos', JSON.stringify(PART_PHOTOS));
-    renderInventory();
-    renderSummary();
-    updateBackupStatus();
-    showToast(`✅ Restored ${INVENTORY.length} parts (${backupDate})`, 'success');
-
+    renderInventory(); renderSummary(); updateBackupStatus();
+    showToast(INVENTORY.length + ' parts restored (' + backupDate + ') - loading photos...', 'success');
+    const photosFile = data.files['volvo_photos.json'];
+    if (photosFile && photosFile.content) {
+      try {
+        const pp = JSON.parse(photosFile.content);
+        PART_PHOTOS = pp.photos || {};
+        localStorage.setItem('volvo_part_photos', JSON.stringify(PART_PHOTOS));
+        renderInventory();
+        showToast(INVENTORY.length + ' parts + photos restored (' + backupDate + ')', 'success');
+      } catch(photoErr) {
+        showToast(INVENTORY.length + ' parts restored - photos could not be loaded', 'success');
+      }
+    } else {
+      showToast(INVENTORY.length + ' parts restored (no photos in this backup)', 'success');
+    }
   } catch(err) {
     showToast('Restore failed: ' + err.message, 'error');
   }
 }
 
+async function autoRestoreIfEmpty() {
+  if (INVENTORY.length > 0) return;
+  const token = getGithubToken();
+  const gistId = getGistId();
+  if (!token || !gistId) return;
+  console.log('Empty localStorage + Gist configured - auto-restoring...');
+  showPersistentToast('Auto-restoring from last backup...');
+  await restoreFromGist();
+}
 function updateBackupStatus() {
   const last = localStorage.getItem('volvo_last_backup');
   const el = document.getElementById('backupStatus');
