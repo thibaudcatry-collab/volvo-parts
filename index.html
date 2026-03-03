@@ -1245,7 +1245,23 @@ function showToast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'toast show' + (type ? ' ' + type : '');
-  setTimeout(() => t.className = 'toast', 3000);
+  window._toastTimer = setTimeout(() => t.className = 'toast', 3000);
+}
+
+function showPersistentToast(msg) {
+  const t = document.getElementById('toast');
+  clearTimeout(window._toastTimer);
+  t.textContent = msg;
+  t.className = 'toast show';
+}
+
+function showActionToast(msg, actionLabel, actionFn) {
+  const t = document.getElementById('toast');
+  clearTimeout(window._toastTimer);
+  window._toastAction = actionFn;
+  t.innerHTML = msg + ' <button onclick="if(window._toastAction){window._toastAction();window._toastAction=null;document.getElementById(\'toast\').className=\'toast\';clearTimeout(window._toastTimer);}" style="margin-left:10px;padding:2px 10px;font-size:11px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);border-radius:4px;color:#fff;cursor:pointer;font-family:inherit;font-weight:600">' + actionLabel + '</button>';
+  t.className = 'toast show';
+  window._toastTimer = setTimeout(function() { t.className = 'toast'; window._toastAction = null; }, 6000);
 }
 
 function copyToClipboard(text, el) {
@@ -1447,36 +1463,20 @@ async function addPhotoToPartLibrary(partNo, dataURL, tatankaHasImage) {
   const isFirst = pp.photos.length === 0;
   pp.photos.push(dataURL);
   const newIdx = pp.photos.length - 1;
-
-  if (isFirst && !tatankaHasImage) {
-    // No competition — set as default silently
+  if (isFirst) {
     pp.defaultIndex = newIdx;
     saveInventory();
-    showToast('Photo saved as default image', 'success');
   } else {
-    // Ask user
-    const existingLabel = !isFirst ? `${pp.photos.length - 1} existing photo(s)` : 'a Tatanka catalogue image';
-    const setDefault = await showPhotoDefaultPrompt(dataURL, existingLabel);
-    if (setDefault) pp.defaultIndex = newIdx;
     saveInventory();
-    showToast(setDefault ? 'Set as default display image ✓' : 'Photo saved to library', 'success');
+    showActionToast('Photo ' + (newIdx + 1) + ' saved', '★ Set as default', function() {
+      pp.defaultIndex = newIdx;
+      saveInventory();
+      showToast('Default updated ✓', 'success');
+    });
   }
 }
 
-function showPhotoDefaultPrompt(newPhotoURL, existingLabel) {
-  return new Promise(resolve => {
-    const modal = document.getElementById('photoDefaultModal');
-    document.getElementById('photoDefaultPreview').src = newPhotoURL;
-    document.getElementById('photoDefaultExistingLabel').textContent = `Currently showing: ${existingLabel}`;
-    modal.style.display = 'flex';
-    window._photoDefaultResolve = resolve;
-  });
-}
 
-function resolvePhotoDefault(val) {
-  document.getElementById('photoDefaultModal').style.display = 'none';
-  if (window._photoDefaultResolve) { window._photoDefaultResolve(val); window._photoDefaultResolve = null; }
-}
 
 async function loadTatankaDB() {
   try {
@@ -2298,21 +2298,23 @@ async function dvHandleNewPhoto(evt) {
   const isFirst = pp.photos.length === 0;
 
   if (!PART_PHOTOS[partNo]) PART_PHOTOS[partNo] = { photos: [], defaultIndex: 0 };
-  PART_PHOTOS[partNo].photos.push(dataURL);
-  const newIdx = PART_PHOTOS[partNo].photos.length - 1;
-
-  if (isFirst && !tatankaHasImage) {
-    PART_PHOTOS[partNo].defaultIndex = newIdx;
+  const ppDv = PART_PHOTOS[partNo];
+  const isFirstDv = ppDv.photos.length === 0;
+  ppDv.photos.push(dataURL);
+  const newIdx = ppDv.photos.length - 1;
+  if (isFirstDv) {
+    ppDv.defaultIndex = newIdx;
     saveInventory();
-    showToast('Photo saved as default image', 'success');
+    showToast('Photo saved ✓', 'success');
   } else {
-    const existingLabel = !isFirst
-      ? `${pp.photos.length} existing photo(s)`
-      : 'Tatanka catalogue image';
-    const setDef = await showPhotoDefaultPrompt(dataURL, existingLabel);
-    if (setDef) PART_PHOTOS[partNo].defaultIndex = newIdx;
     saveInventory();
-    showToast(setDef ? 'Set as default ✓' : 'Photo added to library', 'success');
+    showActionToast('Photo ' + (newIdx + 1) + ' saved', '★ Set as default', function() {
+      ppDv.defaultIndex = newIdx;
+      _dvState.defaultIndex = newIdx;
+      saveInventory();
+      dvRenderMyPhotos();
+      showToast('Default updated ✓', 'success');
+    });
   }
 
   // Refresh state
@@ -3339,6 +3341,8 @@ async function backupToGist(silent = false) {
     return;
   }
 
+  if (!silent) showPersistentToast('☁️ Backing up…');
+
   const payload = {
     inventory: INVENTORY,
     partPhotos: PART_PHOTOS,
@@ -4079,17 +4083,7 @@ function saveAllBulk() { console.warn("saveAllBulk not implemented"); }
 </div>
 
 <!-- ── PHOTO DEFAULT PROMPT ── -->
-<div class="photo-default-modal" id="photoDefaultModal">
-  <div class="photo-default-card">
-    <div class="photo-default-title">Set as default image?</div>
-    <img class="photo-default-preview" id="photoDefaultPreview" src="" alt="">
-    <div class="photo-default-sub" id="photoDefaultExistingLabel"></div>
-    <div class="photo-default-btns">
-      <button class="btn btn-secondary" onclick="resolvePhotoDefault(false)">Keep existing</button>
-      <button class="btn btn-primary" onclick="resolvePhotoDefault(true)">Set as default</button>
-    </div>
-  </div>
-</div>
+
 
 <!-- External data files — must be in same folder as index.html -->
 <script src="PARTS_DB.js"></script>
