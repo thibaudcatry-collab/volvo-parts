@@ -1112,6 +1112,9 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
         <button class="btn btn-secondary btn-sm" onclick="exportInventoryJSON()">💾 Backup Inventory</button>
         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importInput').click()">📂 Restore Backup</button>
         <input type="file" id="importInput" accept=".json" style="display:none" onchange="importInventoryJSON(this)">
+        <button class="btn btn-secondary btn-sm" onclick="exportPhotosJSON()">🖼️ Export Photos</button>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importPhotosInput').click()">📂 Import Photos</button>
+        <input type="file" id="importPhotosInput" accept=".json" style="display:none" onchange="importPhotosJSON(this)">
       </div>
     </div>
     <div class="card">
@@ -3444,48 +3447,15 @@ async function restoreFromGist() {
     renderInventory(); renderSummary(); updateBackupStatus();
     showToast(INVENTORY.length + ' parts restored (' + backupDate + ') - loading photos...', 'success');
     const photosFile = data.files['volvo_photos.json'];
-    if (photosFile) {
+    if (photosFile && photosFile.content) {
       try {
-        showPersistentToast('Loading photos...');
-        let photosRaw = null;
-
-        // First try: use inline content if available and not truncated
-        if (photosFile.content && !photosFile.truncated) {
-          photosRaw = photosFile.content;
-        }
-
-        // Second try: GitHub truncates large files — re-fetch the full Gist and read raw content
-        if (!photosRaw) {
-          showPersistentToast('Photos file large — fetching in full...');
-          // Fetch the full Gist again but request the raw file directly via the Gist API
-          const rawRes = await fetch(
-            'https://api.github.com/gists/' + gistId,
-            { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.raw+json' } }
-          );
-          if (rawRes.ok) {
-            const rawData = await rawRes.json();
-            const pf = rawData.files && rawData.files['volvo_photos.json'];
-            if (pf && pf.content) photosRaw = pf.content;
-          }
-        }
-
-        // Third try: fetch the raw_url directly (no auth — gist raw URLs are accessible)
-        if (!photosRaw && photosFile.raw_url) {
-          showPersistentToast('Fetching photos directly...');
-          const rawRes2 = await fetch(photosFile.raw_url);
-          if (rawRes2.ok) photosRaw = await rawRes2.text();
-        }
-
-        if (!photosRaw) throw new Error('Could not retrieve photos content after 3 attempts');
-
-        const pp = JSON.parse(photosRaw);
+        const pp = JSON.parse(photosFile.content);
         PART_PHOTOS = pp.photos || {};
         localStorage.setItem('volvo_part_photos', JSON.stringify(PART_PHOTOS));
         renderInventory();
-        showToast(INVENTORY.length + ' parts + photos restored (' + backupDate + ') ✓', 'success');
+        showToast(INVENTORY.length + ' parts + photos restored (' + backupDate + ')', 'success');
       } catch(photoErr) {
-        console.error('Photo restore error:', photoErr);
-        showToast(INVENTORY.length + ' parts restored — photos failed: ' + photoErr.message, 'error');
+        showToast(INVENTORY.length + ' parts restored - photos could not be loaded', 'success');
       }
     } else {
       showToast(INVENTORY.length + ' parts restored (no photos in this backup)', 'success');
@@ -3603,6 +3573,39 @@ function importInventoryJSON(input) {
         showToast('Backup restored!', 'success');
       }
     } catch(err) { showToast('Invalid backup file', 'error'); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+function exportPhotosJSON() {
+  const count = Object.keys(PART_PHOTOS).length;
+  if (count === 0) { showToast('No photos to export', 'error'); return; }
+  const blob = new Blob([JSON.stringify({ version: 2, photos: PART_PHOTOS }, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'volvo_photos_backup_' + Date.now() + '.json';
+  a.click();
+  showToast(count + ' parts photos exported ✓', 'success');
+}
+
+function importPhotosJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const photos = data.photos || data; // support both wrapped and raw format
+      const count = Object.keys(photos).length;
+      if (count === 0) { showToast('No photos found in file', 'error'); return; }
+      // Merge into existing PART_PHOTOS rather than replace, so nothing is lost
+      Object.assign(PART_PHOTOS, photos);
+      localStorage.setItem('volvo_part_photos', JSON.stringify(PART_PHOTOS));
+      renderInventory();
+      showToast(count + ' parts photos imported ✓', 'success');
+    } catch(err) { showToast('Invalid photos file', 'error'); }
   };
   reader.readAsText(file);
   input.value = '';
