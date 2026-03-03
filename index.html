@@ -3447,21 +3447,42 @@ async function restoreFromGist() {
     if (photosFile) {
       try {
         showPersistentToast('Loading photos...');
-        // GitHub truncates large files — if content is cut off, fetch via raw_url instead
-        let photosRaw = photosFile.content;
-        if (photosFile.truncated || !photosRaw) {
-          if (!photosFile.raw_url) throw new Error('Photos file truncated and no raw_url available');
-          const rawRes = await fetch(photosFile.raw_url, {
-            headers: { 'Authorization': 'Bearer ' + token }
-          });
-          if (!rawRes.ok) throw new Error('Could not fetch raw photos: ' + rawRes.status);
-          photosRaw = await rawRes.text();
+        let photosRaw = null;
+
+        // First try: use inline content if available and not truncated
+        if (photosFile.content && !photosFile.truncated) {
+          photosRaw = photosFile.content;
         }
+
+        // Second try: GitHub truncates large files — re-fetch the full Gist and read raw content
+        if (!photosRaw) {
+          showPersistentToast('Photos file large — fetching in full...');
+          // Fetch the full Gist again but request the raw file directly via the Gist API
+          const rawRes = await fetch(
+            'https://api.github.com/gists/' + gistId,
+            { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.raw+json' } }
+          );
+          if (rawRes.ok) {
+            const rawData = await rawRes.json();
+            const pf = rawData.files && rawData.files['volvo_photos.json'];
+            if (pf && pf.content) photosRaw = pf.content;
+          }
+        }
+
+        // Third try: fetch the raw_url directly (no auth — gist raw URLs are accessible)
+        if (!photosRaw && photosFile.raw_url) {
+          showPersistentToast('Fetching photos directly...');
+          const rawRes2 = await fetch(photosFile.raw_url);
+          if (rawRes2.ok) photosRaw = await rawRes2.text();
+        }
+
+        if (!photosRaw) throw new Error('Could not retrieve photos content after 3 attempts');
+
         const pp = JSON.parse(photosRaw);
         PART_PHOTOS = pp.photos || {};
         localStorage.setItem('volvo_part_photos', JSON.stringify(PART_PHOTOS));
         renderInventory();
-        showToast(INVENTORY.length + ' parts + photos restored (' + backupDate + ')', 'success');
+        showToast(INVENTORY.length + ' parts + photos restored (' + backupDate + ') ✓', 'success');
       } catch(photoErr) {
         console.error('Photo restore error:', photoErr);
         showToast(INVENTORY.length + ' parts restored — photos failed: ' + photoErr.message, 'error');
