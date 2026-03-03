@@ -10,6 +10,8 @@
 <title>Volvo C3 Parts</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- Microsoft Authentication Library (MSAL) for OneDrive login -->
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 <style>
 :root {
   --bg: #0d0d0d;
@@ -1112,45 +1114,40 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
         <button class="btn btn-secondary btn-sm" onclick="exportInventoryJSON()">💾 Backup Inventory</button>
         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importInput').click()">📂 Restore Backup</button>
         <input type="file" id="importInput" accept=".json" style="display:none" onchange="importInventoryJSON(this)">
-        <button class="btn btn-secondary btn-sm" onclick="exportPhotosJSON()">🖼️ Export Photos</button>
-        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importPhotosInput').click()">📂 Import Photos</button>
-        <input type="file" id="importPhotosInput" accept=".json" style="display:none" onchange="importPhotosJSON(this)">
       </div>
     </div>
     <div class="card">
-      <div class="card-title"><span class="ct-icon">☁️</span> GITHUB BACKUP</div>
+      <div class="card-title"><span class="ct-icon">☁️</span> ONEDRIVE BACKUP</div>
+      <!-- Account status row -->
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Microsoft Account</div>
+          <div class="settings-sublabel" id="odAccountStatus">Not signed in</div>
+        </div>
+        <div class="settings-control" style="display:flex;gap:6px">
+          <button class="btn btn-secondary btn-sm" id="odSignInBtn" onclick="oneDriveSignIn()">Sign In</button>
+          <button class="btn btn-danger btn-sm" id="odSignOutBtn" onclick="oneDriveSignOut()" style="display:none">Sign Out</button>
+        </div>
+      </div>
+      <!-- Last backup row -->
       <div class="settings-row">
         <div>
           <div class="settings-label">Auto-backup</div>
-          <div class="settings-sublabel">Every 3 saves → private GitHub Gist</div>
+          <div class="settings-sublabel">Every 3 saves → OneDrive/VolvoC303Parts/</div>
         </div>
         <div class="settings-control">
           <span id="backupStatus" style="font-family:'IBM Plex Mono',monospace;font-size:11px">—</span>
         </div>
       </div>
-      <div class="settings-row">
-        <div>
-          <div class="settings-label">GitHub Token</div>
-          <div id="githubTokenStatus" class="settings-sublabel">Not set</div>
-        </div>
-        <div class="settings-control" style="display:flex;gap:6px">
-          <button class="btn btn-secondary btn-sm" onclick="promptGithubToken()">Change</button>
-          <button class="btn btn-danger btn-sm" onclick="clearGithubToken()">Clear</button>
-        </div>
-      </div>
-      <div class="settings-row">
-        <div>
-          <div class="settings-label">Gist ID</div>
-          <div id="gistIdStatus" class="settings-sublabel">Not set</div>
-        </div>
-        <div class="settings-control" style="display:flex;gap:6px">
-          <button class="btn btn-secondary btn-sm" onclick="promptGistId()">Change</button>
-          <button class="btn btn-danger btn-sm" onclick="clearGistId()">Clear</button>
-        </div>
-      </div>
+      <!-- Action buttons -->
       <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-secondary btn-sm" onclick="backupToGist(false)">☁️ Backup Now</button>
-        <button class="btn btn-secondary btn-sm" onclick="restoreFromGist()">⬇️ Restore from GitHub</button>
+        <button class="btn btn-secondary btn-sm" onclick="backupToOneDrive(false)">☁️ Backup Now</button>
+        <button class="btn btn-secondary btn-sm" onclick="restoreFromOneDrive()">⬇️ Restore from OneDrive</button>
+      </div>
+      <!-- Setup help text (shown when not signed in) -->
+      <div id="odSetupHelp" style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:6px;font-size:11px;color:var(--text2);line-height:1.7">
+        <b style="color:var(--accent)">First time?</b> Click Sign In to connect your Microsoft / OneDrive account.
+        Your data is stored privately in your own OneDrive — no file size limits.
       </div>
     </div>
     <div class="card">
@@ -1216,8 +1213,16 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
 // ═══════════════════════════════════════════════════════
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages';
 const API_KEY_STORAGE = 'volvo_api_key';
-const GITHUB_TOKEN_STORAGE = 'volvo_github_token';
-const GIST_ID_STORAGE = 'volvo_gist_id';
+// ── OneDrive / MSAL config ──────────────────────────────────────────────────
+// IMPORTANT: Replace YOUR_CLIENT_ID_HERE with the Application (client) ID
+// you get after registering your app in Azure Portal (portal.azure.com).
+// See the README or setup instructions for step-by-step guidance.
+const OD_CLIENT_ID = '778b1cf1-0794-4a6b-992b-a7fe950e11da';
+const OD_FOLDER   = 'VolvoC303Parts';   // folder name created in your OneDrive
+const OD_INV_FILE = 'inventory.json';   // inventory data file name
+const OD_PHO_FILE = 'photos.json';      // photos data file name (base64 dataURLs)
+let _msalApp = null;   // MSAL instance (created lazily on first use)
+let _odAccount = null; // currently signed-in Microsoft account
 let _savesSinceBackup = 0;
 const AUTO_BACKUP_EVERY = 3;
 
@@ -1405,7 +1410,7 @@ function updateSettingsUI() {
   document.getElementById('settingRate').value = SETTINGS.rate;
   document.getElementById('settingDiscountIn').value = SETTINGS.discountIn;
   document.getElementById('settingDiscountOut').value = SETTINGS.discountOut;
-  updateGithubSettingsUI();
+  updateOneDriveUI();
 }
 
 function updateApiKeyStatus() {
@@ -1424,6 +1429,7 @@ async function init() {
   loadInventory();
   await loadTatankaDB();
   await loadDiagramMap();
+  getMsalApp(); // restore OneDrive sign-in state from previous session
   updateHeaderStats();
   renderInventory();
   renderCatalogue();
@@ -1447,7 +1453,7 @@ function saveInventory() {
   _savesSinceBackup++;
   if (_savesSinceBackup >= AUTO_BACKUP_EVERY) {
     _savesSinceBackup = 0;
-    backupToGist(true); // silent auto-backup
+    backupToOneDrive(true); // silent auto-backup
   }
 }
 
@@ -3355,125 +3361,248 @@ function saveSettings() {
   updateSettingsUI();
 }
 
-// ── GitHub Gist Backup ────────────────────────────────────────────────────────
+// ── OneDrive Backup (MSAL + Microsoft Graph API) ────────────────────────────
+// HOW IT WORKS (plain english):
+// 1. getMsalApp()       → creates the Microsoft login engine once
+// 2. oneDriveSignIn()   → opens a Microsoft login popup, saves the account
+// 3. getOdToken()       → gets a short-lived access token (refreshes automatically)
+// 4. ensureOdFolder()   → creates /VolvoC303Parts/ in your OneDrive if missing
+// 5. backupToOneDrive() → saves inventory.json + photos.json into that folder
+// 6. restoreFromOneDrive() → reads those files back and reloads the app data
 
-function getGithubToken() {
-  return localStorage.getItem(GITHUB_TOKEN_STORAGE) || '';
-}
-
-function getGistId() {
-  return localStorage.getItem(GIST_ID_STORAGE) || '';
-}
-
-async function backupToGist(silent = false) {
-  const token = getGithubToken();
-  if (!token) {
-    if (!silent) showToast('No GitHub token set - add it in Settings', 'error');
-    return;
+function getMsalApp() {
+  // Lazy-create the MSAL instance so we only init it when needed
+  if (_msalApp) return _msalApp;
+  if (OD_CLIENT_ID === 'YOUR_CLIENT_ID_HERE') {
+    showToast('OneDrive: set your Azure Client ID in the code first!', 'error');
+    return null;
   }
-  if (!silent) showPersistentToast('Backing up...');
-  const invPayload = {
-    version: 2, backupDate: new Date().toISOString(), partCount: INVENTORY.length,
-    inventory: INVENTORY.map(function(item) { var c = Object.assign({}, item); delete c.photo; return c; }),
-  };
-  const photosPayload = { version: 2, backupDate: new Date().toISOString(), photos: PART_PHOTOS };
-  const gistBody = {
-    description: 'Volvo C303 Parts Inventory Backup', public: false,
-    files: {
-      'volvo_inventory.json': { content: JSON.stringify(invPayload, null, 2) },
-      'volvo_photos.json':    { content: JSON.stringify(photosPayload, null, 2) },
+  _msalApp = new msal.PublicClientApplication({
+    auth: {
+      clientId: OD_CLIENT_ID,
+      authority: 'https://login.microsoftonline.com/consumers',
+      // redirectUri must match exactly what you registered in Azure Portal
+      redirectUri: window.location.origin + window.location.pathname,
     },
-  };
+    cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: true },
+  });
+  // Check if a user was already signed in from a previous session
+  const accounts = _msalApp.getAllAccounts();
+  if (accounts.length > 0) {
+    _odAccount = accounts[0];
+    updateOneDriveUI();
+  }
+  return _msalApp;
+}
+
+async function oneDriveSignIn() {
+  const app = getMsalApp();
+  if (!app) return;
   try {
-    const gistId = getGistId();
-    const url = gistId ? 'https://api.github.com/gists/' + gistId : 'https://api.github.com/gists';
-    const method = gistId ? 'PATCH' : 'POST';
-    const res = await fetch(url, {
-      method: method,
-      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify(gistBody),
+    // Opens a popup window asking the user to sign in with Microsoft
+    const result = await app.loginPopup({
+      scopes: ['Files.ReadWrite', 'offline_access'],
     });
-    if (!res.ok) throw new Error('GitHub error: ' + res.status);
-    const data = await res.json();
-    localStorage.setItem(GIST_ID_STORAGE, data.id);
-    localStorage.setItem('volvo_last_backup', new Date().toISOString());
-    updateBackupStatus(); updateGithubSettingsUI();
-    if (!silent) showToast('Backed up ' + INVENTORY.length + ' parts + photos', 'success');
-    else console.log('Auto-backup OK: ' + INVENTORY.length + ' parts');
-  } catch(err) {
-    console.error('Backup failed:', err);
-    if (!silent) showToast('Backup failed: ' + err.message, 'error');
-    else showToast('Auto-backup failed - check token in Settings', 'error');
+    _odAccount = result.account;
+    updateOneDriveUI();
+    showToast('Signed in as ' + _odAccount.username, 'success');
+  } catch (err) {
+    if (err.errorCode !== 'user_cancelled') {
+      showToast('Sign-in failed: ' + (err.message || err), 'error');
+    }
   }
 }
 
+function oneDriveSignOut() {
+  const app = getMsalApp();
+  if (!app || !_odAccount) return;
+  app.logoutPopup({ account: _odAccount });
+  _odAccount = null;
+  updateOneDriveUI();
+  showToast('Signed out from OneDrive', 'success');
+}
 
-async function restoreFromGist() {
-  const token = getGithubToken();
-  const gistId = getGistId();
-  if (!token || !gistId) {
-    showToast('No backup found - set GitHub token and backup first', 'error');
-    return;
-  }
-  if (!confirm('Restore from GitHub? This replaces your current ' + INVENTORY.length + ' parts.')) return;
-  showPersistentToast('Restoring inventory...');
+async function getOdToken() {
+  // Gets a fresh access token silently (no popup if session is still valid)
+  const app = getMsalApp();
+  if (!app) return null;
+  if (!_odAccount) { showToast('Sign in to OneDrive first', 'error'); return null; }
   try {
-    const res = await fetch('https://api.github.com/gists/' + gistId, {
-      headers: { 'Authorization': 'Bearer ' + token }
+    const result = await app.acquireTokenSilent({
+      scopes: ['Files.ReadWrite'],
+      account: _odAccount,
     });
-    if (!res.ok) throw new Error('GitHub error: ' + res.status);
-    const data = await res.json();
-    const invRaw = data.files['volvo_inventory.json'] ? data.files['volvo_inventory.json'].content : null;
-    if (!invRaw) throw new Error('Inventory file not found in Gist');
-    let inventory = [], backupDate = '?';
+    return result.accessToken;
+  } catch (err) {
+    // Silent failed → need to show a popup to refresh the session
     try {
-      const payload = JSON.parse(invRaw);
-      inventory = payload.inventory || [];
-      backupDate = (payload.backupDate || '?').slice(0, 10);
-    } catch(parseErr) {
-      showPersistentToast('Recovering from old backup...');
-      const rx = /"id":\s*(\d{13})[^}]*?"partNo":\s*"([^"]*)"[^}]*?"name":\s*"([^"]*)"[^}]*?"nameSv":\s*"([^"]*)"[^}]*?"group":\s*"([^"]*)"[^}]*?"box":\s*"([^"]*)"[^}]*?"qty":\s*(\d+)[^}]*?"condition":\s*"([^"]*)"[^}]*?"askingPrice":\s*([\d.]+)/g;
-      let m;
-      while ((m = rx.exec(invRaw)) !== null) {
-        inventory.push({ id: parseInt(m[1]), partNo: m[2], name: m[3], nameSv: m[4],
-          group: m[5], box: m[6], qty: parseInt(m[7]), condition: m[8],
-          askingPrice: parseFloat(m[9]), notes: '', photo: null, status: 'available',
-          addedDate: new Date().toISOString(), isCustom: m[2].startsWith('CUSTOM') });
-      }
-      if (inventory.length === 0) throw new Error('Could not recover any parts');
+      const result = await app.acquireTokenPopup({
+        scopes: ['Files.ReadWrite'],
+        account: _odAccount,
+      });
+      return result.accessToken;
+    } catch (err2) {
+      showToast('OneDrive auth failed — please Sign In again', 'error');
+      return null;
     }
+  }
+}
+
+async function odGraphCall(token, method, path, body) {
+  // Helper: makes a Microsoft Graph API call
+  // Graph API is the Microsoft service that lets you read/write OneDrive files
+  const opts = {
+    method: method,
+    headers: { 'Authorization': 'Bearer ' + token },
+  };
+  if (body !== undefined) {
+    if (typeof body === 'string') {
+      opts.headers['Content-Type'] = 'application/octet-stream';
+      opts.body = body;
+    } else {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }
+  }
+  const res = await fetch('https://graph.microsoft.com/v1.0' + path, opts);
+  if (!res.ok) {
+    const errText = await res.text().catch(() => res.status);
+    throw new Error('Graph API error ' + res.status + ': ' + errText);
+  }
+  // 204 No Content = success with no body
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+async function ensureOdFolder(token) {
+  // Creates the VolvoC303Parts folder in OneDrive if it doesn't exist yet
+  try {
+    await odGraphCall(token, 'GET', '/me/drive/root:/' + OD_FOLDER);
+    return true; // folder already exists
+  } catch (err) {
+    if (err.message.includes('404') || err.message.includes('itemNotFound')) {
+      // Folder missing → create it
+      await odGraphCall(token, 'POST', '/me/drive/root/children', {
+        name: OD_FOLDER,
+        folder: {},
+        '@microsoft.graph.conflictBehavior': 'rename',
+      });
+      return true;
+    }
+    throw err;
+  }
+}
+
+async function backupToOneDrive(silent = false) {
+  // Step-by-step what this does:
+  // 1. Get access token
+  // 2. Make sure the folder exists
+  // 3. Upload inventory.json (parts data WITHOUT photos)
+  // 4. Upload photos.json (all base64 photo data)
+  // 5. Save backup timestamp
+  const token = await getOdToken();
+  if (!token) return;
+  if (!silent) showPersistentToast('Backing up to OneDrive...');
+  try {
+    await ensureOdFolder(token);
+
+    // Build inventory payload (photos stripped out — saved separately)
+    const invPayload = JSON.stringify({
+      version: 3,
+      backupDate: new Date().toISOString(),
+      partCount: INVENTORY.length,
+      inventory: INVENTORY.map(function(item) {
+        var c = Object.assign({}, item);
+        delete c.photo; // photo field on the item itself (legacy)
+        return c;
+      }),
+    }, null, 2);
+
+    // Build photos payload
+    const phoPayload = JSON.stringify({
+      version: 3,
+      backupDate: new Date().toISOString(),
+      photos: PART_PHOTOS,
+    }, null, 2);
+
+    // Upload both files using Graph API "upload by path" — simple PUT
+    const base = '/me/drive/root:/' + OD_FOLDER + '/';
+    await odGraphCall(token, 'PUT', base + OD_INV_FILE + ':/content', invPayload);
+    await odGraphCall(token, 'PUT', base + OD_PHO_FILE + ':/content', phoPayload);
+
+    localStorage.setItem('volvo_last_backup', new Date().toISOString());
+    updateBackupStatus();
+    if (!silent) showToast('Backed up ' + INVENTORY.length + ' parts + photos to OneDrive ✓', 'success');
+    else console.log('OneDrive auto-backup OK: ' + INVENTORY.length + ' parts');
+  } catch (err) {
+    console.error('OneDrive backup failed:', err);
+    if (!silent) showToast('Backup failed: ' + err.message, 'error');
+    else showToast('Auto-backup failed — check OneDrive sign-in in Settings', 'error');
+  }
+}
+
+async function restoreFromOneDrive() {
+  // Step-by-step what this does:
+  // 1. Get access token
+  // 2. Download inventory.json from OneDrive
+  // 3. Parse and load it into the app
+  // 4. Download photos.json and load photos
+  const token = await getOdToken();
+  if (!token) return;
+  if (!confirm('Restore from OneDrive? This replaces your current ' + INVENTORY.length + ' parts.')) return;
+  showPersistentToast('Restoring from OneDrive...');
+  try {
+    const base = '/me/drive/root:/' + OD_FOLDER + '/';
+
+    // Download inventory file
+    const invMeta = await odGraphCall(token, 'GET', base + OD_INV_FILE + ':/content');
+    // Graph returns a redirect for file content — we need to fetch the download URL
+    const invRes = await fetch('https://graph.microsoft.com/v1.0' + base + OD_INV_FILE + ':/content', {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (!invRes.ok) throw new Error('Could not download inventory.json (' + invRes.status + ')');
+    const invData = await invRes.json();
+    const inventory = invData.inventory || [];
+    const backupDate = (invData.backupDate || '?').slice(0, 10);
+
     INVENTORY = inventory;
     localStorage.setItem('volvo_inventory', JSON.stringify(INVENTORY));
     renderInventory(); renderSummary(); updateBackupStatus();
-    showToast(INVENTORY.length + ' parts restored (' + backupDate + ') - loading photos...', 'success');
-    const photosFile = data.files['volvo_photos.json'];
-    if (photosFile && photosFile.content) {
-      try {
-        const pp = JSON.parse(photosFile.content);
-        PART_PHOTOS = pp.photos || {};
+    showToast(INVENTORY.length + ' parts restored (' + backupDate + ') — loading photos...', 'success');
+
+    // Download photos file
+    try {
+      const phoRes = await fetch('https://graph.microsoft.com/v1.0' + base + OD_PHO_FILE + ':/content', {
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      if (phoRes.ok) {
+        const phoData = await phoRes.json();
+        PART_PHOTOS = phoData.photos || {};
         localStorage.setItem('volvo_part_photos', JSON.stringify(PART_PHOTOS));
         renderInventory();
-        showToast(INVENTORY.length + ' parts + photos restored (' + backupDate + ')', 'success');
-      } catch(photoErr) {
-        showToast(INVENTORY.length + ' parts restored - photos could not be loaded', 'success');
+        showToast(INVENTORY.length + ' parts + photos restored (' + backupDate + ') ✓', 'success');
+      } else {
+        showToast(INVENTORY.length + ' parts restored — no photos file found', 'success');
       }
-    } else {
-      showToast(INVENTORY.length + ' parts restored (no photos in this backup)', 'success');
+    } catch (photoErr) {
+      showToast(INVENTORY.length + ' parts restored — photos could not be loaded', 'success');
     }
-  } catch(err) {
+  } catch (err) {
     showToast('Restore failed: ' + err.message, 'error');
   }
 }
 
 async function autoRestoreIfEmpty() {
+  // On app load: if localStorage is empty AND user is signed into OneDrive,
+  // automatically restore the last backup
   if (INVENTORY.length > 0) return;
-  const token = getGithubToken();
-  const gistId = getGistId();
-  if (!token || !gistId) return;
-  console.log('Empty localStorage + Gist configured - auto-restoring...');
-  showPersistentToast('Auto-restoring from last backup...');
-  await restoreFromGist();
+  const app = getMsalApp();
+  if (!app || !_odAccount) return;
+  console.log('Empty localStorage + OneDrive signed in — auto-restoring...');
+  showPersistentToast('Auto-restoring from last OneDrive backup...');
+  await restoreFromOneDrive();
 }
+
 function updateBackupStatus() {
   const last = localStorage.getItem('volvo_last_backup');
   const el = document.getElementById('backupStatus');
@@ -3490,63 +3619,40 @@ function updateBackupStatus() {
   }
 }
 
-function saveGithubToken(val) {
-  localStorage.setItem(GITHUB_TOKEN_STORAGE, val.trim());
-  showToast('GitHub token saved', 'success');
+function updateOneDriveUI() {
+  const accountEl = document.getElementById('odAccountStatus');
+  const signInBtn = document.getElementById('odSignInBtn');
+  const signOutBtn = document.getElementById('odSignOutBtn');
+  const helpEl = document.getElementById('odSetupHelp');
+  if (!accountEl) return;
+  if (_odAccount) {
+    accountEl.textContent = _odAccount.username;
+    accountEl.style.color = 'var(--green)';
+    if (signInBtn) signInBtn.style.display = 'none';
+    if (signOutBtn) signOutBtn.style.display = '';
+    if (helpEl) helpEl.style.display = 'none';
+  } else {
+    accountEl.textContent = 'Not signed in';
+    accountEl.style.color = 'var(--muted)';
+    if (signInBtn) signInBtn.style.display = '';
+    if (signOutBtn) signOutBtn.style.display = 'none';
+    if (helpEl) helpEl.style.display = '';
+  }
   updateBackupStatus();
 }
 
-function saveGistId(val) {
-  const v = val.trim();
-  if (v) {
-    localStorage.setItem(GIST_ID_STORAGE, v);
-    showToast('Gist ID saved', 'success');
-  }
-}
-function promptGithubToken() {
-  const body = document.getElementById("modalBody");
-  const cur = getGithubToken();
-  body.innerHTML = "<div class=\"modal-title\">GITHUB TOKEN</div><div style=\"font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6\">Enter your GitHub personal access token (classic) with <b>gist</b> scope.<br>Stored only on this device.</div><div class=\"fg\"><label>GitHub Token</label><input type=\"password\" id=\"ghTokenInput\" placeholder=\"ghp_...\" autocomplete=\"off\" autocorrect=\"off\" autocapitalize=\"none\" spellcheck=\"false\"></div><div style=\"margin-top:4px;margin-bottom:16px\"><a href=\"https://github.com/settings/tokens\" target=\"_blank\" style=\"font-family:IBM Plex Mono,monospace;font-size:11px;color:var(--blue)\">Create token at github.com/settings/tokens</a></div><div class=\"btn-group\"><button class=\"btn btn-secondary\" style=\"flex:1\" onclick=\"closeModal()\">Cancel</button><button class=\"btn btn-primary\" style=\"flex:1\" onclick=\"confirmGithubToken()\">SAVE</button></div>";
-  document.getElementById("modalOverlay").classList.add("open");
-  setTimeout(function(){ var el=document.getElementById("ghTokenInput"); if(el) el.focus(); }, 100);
-}
-function confirmGithubToken() {
-  const val = document.getElementById("ghTokenInput").value.trim();
-  if (!val) { showToast("Token required", "error"); return; }
-  localStorage.setItem(GITHUB_TOKEN_STORAGE, val);
-  closeModal(); updateGithubSettingsUI(); showToast("GitHub token saved", "success");
-}
-function clearGithubToken() {
-  if (!confirm("Remove GitHub token?")) return;
-  localStorage.removeItem(GITHUB_TOKEN_STORAGE);
-  updateGithubSettingsUI(); showToast("Token cleared", "success");
-}
-function promptGistId() {
-  const body = document.getElementById("modalBody");
-  const current = getGistId() || "";
-  body.innerHTML = "<div class=\"modal-title\">GIST ID</div><div style=\"font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6\">Set automatically after first backup.<br>Copy from your laptop to sync a new device.</div><div class=\"fg\"><label>Gist ID</label><input type=\"text\" id=\"gistIdModalInput\" value=\"" + current + "\" placeholder=\"7f546c9be60f1f7915c3d5b81a890330\" autocomplete=\"off\" autocorrect=\"off\" autocapitalize=\"none\" spellcheck=\"false\" style=\"font-family:IBM Plex Mono,monospace;font-size:12px\"></div><div class=\"btn-group\" style=\"margin-top:16px\"><button class=\"btn btn-secondary\" style=\"flex:1\" onclick=\"closeModal()\">Cancel</button><button class=\"btn btn-primary\" style=\"flex:1\" onclick=\"confirmGistId()\">SAVE</button></div>";
-  document.getElementById("modalOverlay").classList.add("open");
-  setTimeout(function(){ var el=document.getElementById("gistIdModalInput"); if(el) el.focus(); }, 100);
-}
-function confirmGistId() {
-  const val = document.getElementById("gistIdModalInput").value.trim();
-  if (!val) { showToast("Gist ID required", "error"); return; }
-  localStorage.setItem(GIST_ID_STORAGE, val);
-  closeModal(); updateGithubSettingsUI(); showToast("Gist ID saved", "success");
-}
-function clearGistId() {
-  if (!confirm("Remove Gist ID? Next backup will create a new Gist.")) return;
-  localStorage.removeItem(GIST_ID_STORAGE);
-  updateGithubSettingsUI(); showToast("Gist ID cleared", "success");
-}
-function updateGithubSettingsUI() {
-  const token = getGithubToken(); const gistId = getGistId();
-  const tokenEl = document.getElementById("githubTokenStatus");
-  const gistEl = document.getElementById("gistIdStatus");
-  if (tokenEl) { tokenEl.textContent = token ? "Set (" + token.slice(0,8) + "••••)" : "Not set"; tokenEl.style.color = token ? "var(--green)" : "var(--muted)"; }
-  if (gistEl) { gistEl.textContent = gistId ? gistId.slice(0,12) + "…" : "Not set"; gistEl.style.color = gistId ? "var(--green)" : "var(--muted)"; }
-  updateBackupStatus();
-}
+// Stub: keep old Gist function names harmless in case anything still calls them
+function getGithubToken() { return ''; }
+function getGistId() { return ''; }
+function backupToGist(silent) { backupToOneDrive(silent); }
+function restoreFromGist() { restoreFromOneDrive(); }
+function updateGithubSettingsUI() { updateOneDriveUI(); }
+function saveGithubToken() {}
+function saveGistId() {}
+function promptGithubToken() { showToast('GitHub backup replaced by OneDrive — use Sign In above', 'error'); }
+function clearGithubToken() {}
+function promptGistId() { showToast('GitHub backup replaced by OneDrive — use Sign In above', 'error'); }
+function clearGistId() {}
 
 
 function exportInventoryJSON() {
@@ -3573,39 +3679,6 @@ function importInventoryJSON(input) {
         showToast('Backup restored!', 'success');
       }
     } catch(err) { showToast('Invalid backup file', 'error'); }
-  };
-  reader.readAsText(file);
-  input.value = '';
-}
-
-function exportPhotosJSON() {
-  const count = Object.keys(PART_PHOTOS).length;
-  if (count === 0) { showToast('No photos to export', 'error'); return; }
-  const blob = new Blob([JSON.stringify({ version: 2, photos: PART_PHOTOS }, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'volvo_photos_backup_' + Date.now() + '.json';
-  a.click();
-  showToast(count + ' parts photos exported ✓', 'success');
-}
-
-function importPhotosJSON(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result);
-      const photos = data.photos || data; // support both wrapped and raw format
-      const count = Object.keys(photos).length;
-      if (count === 0) { showToast('No photos found in file', 'error'); return; }
-      // Merge into existing PART_PHOTOS rather than replace, so nothing is lost
-      Object.assign(PART_PHOTOS, photos);
-      localStorage.setItem('volvo_part_photos', JSON.stringify(PART_PHOTOS));
-      renderInventory();
-      showToast(count + ' parts photos imported ✓', 'success');
-    } catch(err) { showToast('Invalid photos file', 'error'); }
   };
   reader.readAsText(file);
   input.value = '';
