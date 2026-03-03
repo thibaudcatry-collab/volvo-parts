@@ -1128,28 +1128,26 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
       <div class="settings-row">
         <div>
           <div class="settings-label">GitHub Token</div>
-          <div class="settings-sublabel">Personal access token (gist scope)</div>
+          <div id="githubTokenStatus" class="settings-sublabel">Not set</div>
         </div>
-        <div class="settings-control">
-          <input type="password" id="githubTokenInput" placeholder="ghp_..." 
-            style="width:120px;font-size:11px;font-family:'IBM Plex Mono',monospace"
-            onchange="saveGithubToken(this.value)">
+        <div class="settings-control" style="display:flex;gap:6px">
+          <button class="btn btn-secondary btn-sm" onclick="promptGithubToken()">Change</button>
+          <button class="btn btn-danger btn-sm" onclick="clearGithubToken()">Clear</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Gist ID</div>
+          <div id="gistIdStatus" class="settings-sublabel">Not set</div>
+        </div>
+        <div class="settings-control" style="display:flex;gap:6px">
+          <button class="btn btn-secondary btn-sm" onclick="promptGistId()">Change</button>
+          <button class="btn btn-danger btn-sm" onclick="clearGistId()">Clear</button>
         </div>
       </div>
       <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-secondary btn-sm" onclick="backupToGist(false)">☁️ Backup Now</button>
         <button class="btn btn-secondary btn-sm" onclick="restoreFromGist()">⬇️ Restore from GitHub</button>
-      </div>
-      <div class="settings-row" style="margin-top:10px">
-        <div>
-          <div class="settings-label">Gist ID</div>
-          <div class="settings-sublabel">Copy from laptop to phone to sync</div>
-        </div>
-        <div class="settings-control">
-          <input type="text" id="gistIdInput" placeholder="auto-set after backup"
-            style="width:130px;font-size:10px;font-family:'IBM Plex Mono',monospace"
-            onchange="saveGistId(this.value)">
-        </div>
       </div>
     </div>
     <div class="card">
@@ -1404,20 +1402,7 @@ function updateSettingsUI() {
   document.getElementById('settingRate').value = SETTINGS.rate;
   document.getElementById('settingDiscountIn').value = SETTINGS.discountIn;
   document.getElementById('settingDiscountOut').value = SETTINGS.discountOut;
-  // Pre-fill GitHub token field (masked)
-  const tokenField = document.getElementById('githubTokenInput');
-  if (tokenField) {
-    const t = getGithubToken();
-    tokenField.value = t ? t : '';
-    tokenField.placeholder = t ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022' : 'ghp_...';
-  }
-  const gistField = document.getElementById('gistIdInput');
-  if (gistField) {
-    const g = getGistId();
-    gistField.value = g || '';
-    gistField.placeholder = g ? g : 'auto-set after backup';
-  }
-  updateBackupStatus();
+  updateGithubSettingsUI();
 }
 
 function updateApiKeyStatus() {
@@ -3027,9 +3012,15 @@ async function savePart() {
   }
 
   // Check for existing same part in same box
-  const existing = INVENTORY.find(i =>
+  // Only match duplicates when part has a real part number — custom parts (empty no) are always unique
+  const existing = (g.no && !g.isCustom) ? INVENTORY.find(i =>
     i.partNo === g.no && i.box === box && i.status !== 'sold'
-  );
+  ) : null;
+
+  // Auto-generate custom ID if custom entry with no part number
+  if (g.isCustom && !g.no) {
+    g.no = 'CUSTOM-' + String(INVENTORY.filter(i => i.isCustom).length + 1).padStart(4, '0');
+  }
 
   const newItem = {
     id: Date.now(),
@@ -3059,14 +3050,14 @@ async function savePart() {
     existing.qty += qty;
     duplicateMsg = `Added ${qty} to existing entry in Box ${box}. Total: ${existing.qty} pcs.`;
     // Also save photo to existing part's photo library
-    if (photoPath && existing.partNo) {
+    if (photoPath && (existing.partNo || '').trim()) {
       await addPhotoToPartLibrary(existing.partNo, photoPath, false);
     }
     saveInventory();
   } else {
     INVENTORY.push(newItem);
     // Save photo to PART_PHOTOS so it shows in inventory
-    if (photoPath && newItem.partNo) {
+    if (photoPath && (newItem.partNo || '').trim()) {
       await addPhotoToPartLibrary(newItem.partNo, photoPath, false);
     }
     saveInventory();
@@ -3525,6 +3516,51 @@ function saveGistId(val) {
     showToast('Gist ID saved', 'success');
   }
 }
+function promptGithubToken() {
+  const body = document.getElementById("modalBody");
+  const cur = getGithubToken();
+  body.innerHTML = "<div class=\"modal-title\">GITHUB TOKEN</div><div style=\"font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6\">Enter your GitHub personal access token (classic) with <b>gist</b> scope.<br>Stored only on this device.</div><div class=\"fg\"><label>GitHub Token</label><input type=\"password\" id=\"ghTokenInput\" placeholder=\"ghp_...\" autocomplete=\"off\" autocorrect=\"off\" autocapitalize=\"none\" spellcheck=\"false\"></div><div style=\"margin-top:4px;margin-bottom:16px\"><a href=\"https://github.com/settings/tokens\" target=\"_blank\" style=\"font-family:IBM Plex Mono,monospace;font-size:11px;color:var(--blue)\">Create token at github.com/settings/tokens</a></div><div class=\"btn-group\"><button class=\"btn btn-secondary\" style=\"flex:1\" onclick=\"closeModal()\">Cancel</button><button class=\"btn btn-primary\" style=\"flex:1\" onclick=\"confirmGithubToken()\">SAVE</button></div>";
+  document.getElementById("modalOverlay").classList.add("open");
+  setTimeout(function(){ var el=document.getElementById("ghTokenInput"); if(el) el.focus(); }, 100);
+}
+function confirmGithubToken() {
+  const val = document.getElementById("ghTokenInput").value.trim();
+  if (!val) { showToast("Token required", "error"); return; }
+  localStorage.setItem(GITHUB_TOKEN_STORAGE, val);
+  closeModal(); updateGithubSettingsUI(); showToast("GitHub token saved", "success");
+}
+function clearGithubToken() {
+  if (!confirm("Remove GitHub token?")) return;
+  localStorage.removeItem(GITHUB_TOKEN_STORAGE);
+  updateGithubSettingsUI(); showToast("Token cleared", "success");
+}
+function promptGistId() {
+  const body = document.getElementById("modalBody");
+  const current = getGistId() || "";
+  body.innerHTML = "<div class=\"modal-title\">GIST ID</div><div style=\"font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6\">Set automatically after first backup.<br>Copy from your laptop to sync a new device.</div><div class=\"fg\"><label>Gist ID</label><input type=\"text\" id=\"gistIdModalInput\" value=\"" + current + "\" placeholder=\"7f546c9be60f1f7915c3d5b81a890330\" autocomplete=\"off\" autocorrect=\"off\" autocapitalize=\"none\" spellcheck=\"false\" style=\"font-family:IBM Plex Mono,monospace;font-size:12px\"></div><div class=\"btn-group\" style=\"margin-top:16px\"><button class=\"btn btn-secondary\" style=\"flex:1\" onclick=\"closeModal()\">Cancel</button><button class=\"btn btn-primary\" style=\"flex:1\" onclick=\"confirmGistId()\">SAVE</button></div>";
+  document.getElementById("modalOverlay").classList.add("open");
+  setTimeout(function(){ var el=document.getElementById("gistIdModalInput"); if(el) el.focus(); }, 100);
+}
+function confirmGistId() {
+  const val = document.getElementById("gistIdModalInput").value.trim();
+  if (!val) { showToast("Gist ID required", "error"); return; }
+  localStorage.setItem(GIST_ID_STORAGE, val);
+  closeModal(); updateGithubSettingsUI(); showToast("Gist ID saved", "success");
+}
+function clearGistId() {
+  if (!confirm("Remove Gist ID? Next backup will create a new Gist.")) return;
+  localStorage.removeItem(GIST_ID_STORAGE);
+  updateGithubSettingsUI(); showToast("Gist ID cleared", "success");
+}
+function updateGithubSettingsUI() {
+  const token = getGithubToken(); const gistId = getGistId();
+  const tokenEl = document.getElementById("githubTokenStatus");
+  const gistEl = document.getElementById("gistIdStatus");
+  if (tokenEl) { tokenEl.textContent = token ? "Set (" + token.slice(0,8) + "••••)" : "Not set"; tokenEl.style.color = token ? "var(--green)" : "var(--muted)"; }
+  if (gistEl) { gistEl.textContent = gistId ? gistId.slice(0,12) + "…" : "Not set"; gistEl.style.color = gistId ? "var(--green)" : "var(--muted)"; }
+  updateBackupStatus();
+}
+
 
 function exportInventoryJSON() {
   const blob = new Blob([JSON.stringify(INVENTORY,null,2)], {type:'application/json'});
@@ -3969,6 +4005,8 @@ async function saveCustomPart() {
 
   const customId = 'CUSTOM-' + String(INVENTORY.filter(i=>i.isCustom).length + 1).padStart(4,'0');
 
+  const brand = document.getElementById('customBrand') ? document.getElementById('customBrand').value.trim() : '';
+
   const item = {
     id: Date.now(),
     partNo: customId,
@@ -3986,12 +4024,18 @@ async function saveCustomPart() {
     addedDate: new Date().toISOString(),
   };
 
+  // Save photo to PART_PHOTOS so inventory shows it
+  if (photoPath) {
+    if (!PART_PHOTOS[customId]) PART_PHOTOS[customId] = { photos: [], defaultIndex: 0 };
+    PART_PHOTOS[customId].photos.push(photoPath);
+    PART_PHOTOS[customId].defaultIndex = 0;
+  }
   INVENTORY.push(item);
   saveInventory();
   closeModal();
   renderInventory();
   renderSummary();
-  showToast('Custom part added!', 'success');
+  showToast('Custom part added! ID: ' + customId, 'success');
 }
 
 function exportCatalogue(mode) {
