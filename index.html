@@ -1140,6 +1140,17 @@ button, .btn, .chip, .cond-btn, .status-btn, .nav-btn, .guess-card, .cat-item, .
         <button class="btn btn-secondary btn-sm" onclick="backupToGist(false)">☁️ Backup Now</button>
         <button class="btn btn-secondary btn-sm" onclick="restoreFromGist()">⬇️ Restore from GitHub</button>
       </div>
+      <div class="settings-row" style="margin-top:10px">
+        <div>
+          <div class="settings-label">Gist ID</div>
+          <div class="settings-sublabel">Copy from laptop to phone to sync</div>
+        </div>
+        <div class="settings-control">
+          <input type="text" id="gistIdInput" placeholder="auto-set after backup"
+            style="width:130px;font-size:10px;font-family:'IBM Plex Mono',monospace"
+            onchange="saveGistId(this.value)">
+        </div>
+      </div>
     </div>
     <div class="card">
       <div class="card-title"><span class="ct-icon">🔑</span> API KEY</div>
@@ -1398,7 +1409,13 @@ function updateSettingsUI() {
   if (tokenField) {
     const t = getGithubToken();
     tokenField.value = t ? t : '';
-    tokenField.placeholder = t ? '••••••••••••' : 'ghp_...';
+    tokenField.placeholder = t ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022' : 'ghp_...';
+  }
+  const gistField = document.getElementById('gistIdInput');
+  if (gistField) {
+    const g = getGistId();
+    gistField.value = g || '';
+    gistField.placeholder = g ? g : 'auto-set after backup';
   }
   updateBackupStatus();
 }
@@ -3499,6 +3516,14 @@ function saveGithubToken(val) {
   localStorage.setItem(GITHUB_TOKEN_STORAGE, val.trim());
   showToast('GitHub token saved', 'success');
   updateBackupStatus();
+}
+
+function saveGistId(val) {
+  const v = val.trim();
+  if (v) {
+    localStorage.setItem(GIST_ID_STORAGE, v);
+    showToast('Gist ID saved', 'success');
+  }
 }
 
 function exportInventoryJSON() {
