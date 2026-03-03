@@ -1184,7 +1184,7 @@ let INVENTORY = [];
 let PART_PHOTOS = {}; // keyed by partNo: { photos: [dataURL,...], defaultIndex: 0 }
 let DIAGRAM_MAP = {}; // keyed by partNo: { group, diagramPage, pos, occurrences:[{x,y}] }
 let SETTINGS = {
-  exchangeRate: 0.088,
+  rate: 0.088,
   discountIn: 75,
   discountOut: 60,
   currency: 'EUR'
@@ -2921,8 +2921,8 @@ async function savePart() {
   if (!box)   { showToast('Box number is required', 'error'); return; }
   if (!price) { showToast('Asking price is required', 'error'); return; }
 
-  // Merge manual fields into selectedGuess
-  const g = selectedGuess || {};
+  // Merge manual fields into a copy — never mutate selectedGuess directly
+  const g = Object.assign({}, selectedGuess || {});
   const manualName = document.getElementById('manualName').value.trim();
   const manualNo   = document.getElementById('manualPartNo').value.trim();
   const manualSv   = document.getElementById('manualNameSv').value.trim();
@@ -2938,7 +2938,6 @@ async function savePart() {
   // Save photo
   let photoPath = null;
   if (currentPhotoBlob) {
-    const photoId = 'inv_' + Date.now();
     const reader = new FileReader();
     photoPath = await new Promise(resolve => {
       reader.onload = e => resolve(e.target.result);
@@ -2978,9 +2977,17 @@ async function savePart() {
   if (existing) {
     existing.qty += qty;
     duplicateMsg = `Added ${qty} to existing entry in Box ${box}. Total: ${existing.qty} pcs.`;
+    // Also save photo to existing part's photo library
+    if (photoPath && existing.partNo) {
+      await addPhotoToPartLibrary(existing.partNo, photoPath, false);
+    }
     saveInventory();
   } else {
     INVENTORY.push(newItem);
+    // Save photo to PART_PHOTOS so it shows in inventory
+    if (photoPath && newItem.partNo) {
+      await addPhotoToPartLibrary(newItem.partNo, photoPath, false);
+    }
     saveInventory();
   }
 
@@ -3185,6 +3192,31 @@ function confirmSold(id) {
   openModal('soldConfirm', item);
 }
 
+// Temp storage for photo being edited
+let _editPhotoDataURL = null;
+let _editPhotoRemove = false;
+
+function previewEditPhoto(input, itemId) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    _editPhotoDataURL = e.target.result;
+    _editPhotoRemove = false;
+    const preview = document.getElementById('editPhotoPreview');
+    if (preview) preview.innerHTML = `<img src="${_editPhotoDataURL}" style="width:100%;height:100%;object-fit:cover">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeEditPhoto(itemId) {
+  _editPhotoDataURL = null;
+  _editPhotoRemove = true;
+  const preview = document.getElementById('editPhotoPreview');
+  if (preview) preview.innerHTML = '📷';
+  showToast('Photo will be removed on save', 'info');
+}
+
 function saveEditItem(id) {
   const item = INVENTORY.find(i => i.id === id);
   if (!item) return;
@@ -3194,6 +3226,21 @@ function saveEditItem(id) {
   item.notes = document.getElementById('editNotes').value;
   const cond = document.querySelector('.cond-btn.active-good, .cond-btn.active-fair, .cond-btn.active-poor');
   if (cond) item.condition = cond.dataset.cond;
+
+  // Handle photo changes — only touches PART_PHOTOS, never Tatanka images
+  if (_editPhotoRemove && item.partNo) {
+    if (PART_PHOTOS[item.partNo]) {
+      PART_PHOTOS[item.partNo] = { photos: [], defaultIndex: 0 };
+    }
+    _editPhotoRemove = false;
+  } else if (_editPhotoDataURL && item.partNo) {
+    if (!PART_PHOTOS[item.partNo]) PART_PHOTOS[item.partNo] = { photos: [], defaultIndex: 0 };
+    // Replace first photo or add as first
+    PART_PHOTOS[item.partNo].photos[0] = _editPhotoDataURL;
+    PART_PHOTOS[item.partNo].defaultIndex = 0;
+    _editPhotoDataURL = null;
+  }
+
   saveInventory();
   closeModal();
   renderInventory();
@@ -3476,6 +3523,7 @@ function openModal(type, data) {
 
   else if (type === 'editItem') {
     const item = data;
+    const existingPhoto = getDefaultPartPhoto(item.partNo);
     html = `<button class="modal-close" onclick="closeModal()">\u2715</button>
       <div class="modal-title">\u270f\ufe0f EDIT PART</div>
       <div style="font-size:14px;font-weight:600;margin-bottom:12px">${item.name}</div>
@@ -3493,6 +3541,22 @@ function openModal(type, data) {
         </div>
       </div>
       <div class="fg"><label>Notes</label><textarea id="editNotes">${item.notes||''}</textarea></div>
+      <div class="fg">
+        <label>My Photo</label>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+          <div id="editPhotoPreview" style="width:64px;height:64px;border-radius:6px;background:var(--surface3);border:1px solid var(--border);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:24px">
+            ${existingPhoto ? `<img src="${existingPhoto}" style="width:100%;height:100%;object-fit:cover">` : '📷'}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="cursor:pointer;display:inline-block">
+              <input type="file" accept="image/*" capture="environment" id="editPhotoInput" style="display:none"
+                onchange="previewEditPhoto(this, ${item.id})">
+              <span class="btn btn-secondary btn-xs">📷 ${existingPhoto ? 'REPLACE PHOTO' : 'ADD PHOTO'}</span>
+            </label>
+            ${existingPhoto ? `<button class="btn btn-danger btn-xs" onclick="removeEditPhoto(${item.id})">🗑️ REMOVE</button>` : ''}
+          </div>
+        </div>
+      </div>
       <button class="btn btn-primary btn-full" onclick="saveEditItem(${item.id})">SAVE CHANGES</button>`;
   }
 
