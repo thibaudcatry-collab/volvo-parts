@@ -10,9 +10,6 @@
 <title>Volvo C3 Parts</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<!-- jsPDF for PDF generation -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <script>
   // If jsdelivr failed, try the official Microsoft CDN as fallback
@@ -5064,6 +5061,10 @@ function saveAllBulk() { console.warn("saveAllBulk not implemented"); }
 
 <!-- ── PHOTO DEFAULT PROMPT ── -->
 
+
+<!-- jsPDF for PDF export — loaded last so it never blocks page render -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
 <!-- External data files — must be in same folder as index.html -->
 <script src="PARTS_DB.js"></script>
