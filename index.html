@@ -10,8 +10,14 @@
 <title>Volvo C3 Parts</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<!-- Microsoft Authentication Library (MSAL) for OneDrive login -->
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<!-- Microsoft Authentication Library — try multiple CDNs in case one is blocked -->
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script>
+  // If jsdelivr failed, try the official Microsoft CDN as fallback
+  if (typeof msal === 'undefined') {
+    document.write('<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"><\/script>');
+  }
+</script>
 <style>
 :root {
   --bg: #0d0d0d;
@@ -3373,6 +3379,11 @@ function saveSettings() {
 async function getMsalApp() {
   // Lazy-create the MSAL instance so we only init it when needed
   if (_msalApp) return _msalApp;
+  if (typeof msal === 'undefined') {
+    showToast('MSAL library not loaded — check internet connection', 'error');
+    console.error('msal is not defined — the MSAL script tag failed to load. Check Network tab in DevTools.');
+    return null;
+  }
   if (OD_CLIENT_ID === 'YOUR_CLIENT_ID_HERE') {
     showToast('OneDrive: set your Azure Client ID in the code first!', 'error');
     return null;
